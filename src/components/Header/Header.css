@@ -1,0 +1,18 @@
+/* Header styles */
+header {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Mobile-friendly tap target sizes */
+@media (max-width: 768px) {
+  header button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Header animation */
+header h1 {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

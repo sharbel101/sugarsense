@@ -1,0 +1,1 @@
+export { Page as ChatPage } from './ui/Page/Page';

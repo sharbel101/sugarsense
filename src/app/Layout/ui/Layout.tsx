@@ -1,17 +1,9 @@
 import { FC } from "react";
-import { LayoutFooter, LayoutHeader } from "@/widgets";
-import { Outlet } from "react-router-dom";
 
+// Minimal placeholder layout. The app now renders ChatPage at root, so this
+// component is intentionally empty to avoid importing removed widgets.
 const Layout: FC = () => {
-  return (
-    <div className="h-screen overflow-x-hidden">
-      <LayoutHeader />
-      <main>
-        <Outlet />
-      </main>
-      <LayoutFooter />
-    </div>
-  );
+  return <div />;
 };
 
 export default Layout;

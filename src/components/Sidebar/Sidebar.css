@@ -1,0 +1,40 @@
+/* Sidebar animations and mobile-specific styles */
+.mobile-menu-button {
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-button:hover {
+  transform: scale(1.05);
+}
+
+.mobile-menu-button:active {
+  transform: scale(0.95);
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 768px) {
+  .sidebar button,
+  .sidebar a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

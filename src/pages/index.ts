@@ -1,4 +1,3 @@
-import { Home } from "./Home";
-import { NoMatch } from "./NoMatch";
+import { ChatPage } from "./Chat";
 
-export { Home, NoMatch };
+export { ChatPage };
