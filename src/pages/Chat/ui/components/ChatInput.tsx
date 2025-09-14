@@ -8,7 +8,7 @@ interface ChatInputProps {
 
 export const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend }) => {
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center space-x-2 bg-white">
       <input
         type="text"
         value={value}
@@ -16,10 +16,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ value, onChange, onSend })
         onKeyPress={(e) => e.key === 'Enter' && onSend()}
         className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
         placeholder="Type your message..."
+        style={{ WebkitAppearance: 'none' }}
       />
       <button
         onClick={onSend}
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-all hover:bg-green-600 active:transform active:scale-95"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shadow-md transition-all hover:bg-green-600 active:transform active:scale-95"
+        style={{ WebkitTapHighlightColor: 'transparent' }}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

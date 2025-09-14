@@ -1,18 +1,84 @@
-/* Header styles */
-header {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+/* Glassy, always-visible app header */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999; /* Always on top */
+  
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  height: calc(3.5rem + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top);
+  padding-left: 1rem;
+  padding-right: 1rem;
+
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  border-bottom-left-radius: var(--app-radius);
+  border-bottom-right-radius: var(--app-radius);
+
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-/* Mobile-friendly tap target sizes */
+/* Title styling */
+.app-header h1 {
+  margin: 0 auto;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+
+  /* Center the title */
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+
+  /* Prevent callout on long press in iOS Safari */
+  -webkit-touch-callout: none;
+  /* Fallback: No direct equivalent for non-WebKit browsers */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Buttons inside header */
+.app-header .mobile-menu-button {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff; /* Changed to white for better contrast */
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+.app-header button:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.app-header button:active {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+
+
+/* Touch-friendly tap targets */
 @media (max-width: 768px) {
-  header button {
+  .app-header .mobile-menu-button {
     min-height: 44px;
     min-width: 44px;
+    touch-action: manipulation;
   }
-}
-
-/* Header animation */
-header h1 {
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

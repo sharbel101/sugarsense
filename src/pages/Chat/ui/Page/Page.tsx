@@ -11,16 +11,14 @@ interface Message {
 }
 
 export const Page: React.FC = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
+  // Scroll to bottom when new messages are added
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const handleSendMessage = () => {
@@ -31,7 +29,7 @@ export const Page: React.FC = () => {
         isUser: true,
       };
 
-      setMessages([...messages, newUserMessage]);
+      setMessages((prev) => [...prev, newUserMessage]);
       setInputText('');
 
       // Simulate bot response
@@ -41,39 +39,38 @@ export const Page: React.FC = () => {
           text: 'This is a sample bot response.',
           isUser: false,
         };
-        setMessages(prev => [...prev, botResponse]);
+        setMessages((prev) => [...prev, botResponse]);
       }, 1000);
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-      <div className="flex flex-1 flex-col">
-        <Header />
-        <main className="flex flex-1 flex-col pt-16">
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            <div className="mx-auto max-w-3xl w-full space-y-4">
-              {messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  text={message.text}
-                  isUser={message.isUser}
-                />
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-          <div className="border-t bg-white p-4">
-            <div className="mx-auto max-w-3xl">
-              <ChatInput
-                value={inputText}
-                onChange={setInputText}
-                onSend={handleSendMessage}
-              />
-            </div>
-          </div>
-        </main>
+    <div className="flex flex-col h-screen bg-white overflow-hidden">
+      {/* Header and Sidebar components (Header is fixed via its CSS) */}
+  <Header onToggleSidebar={() => setIsSidebarOpen((s) => !s)} />
+  <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+      {/* Chat messages container - account for fixed header (h-16) and fixed input (approx 76px) */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-[92px]">
+        {messages.map((message) => (
+          <ChatMessage
+            key={message.id}
+            text={message.text}
+            isUser={message.isUser}
+          />
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Fixed input at bottom */}
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-2">
+        <div className="mx-auto max-w-3xl">
+          <ChatInput
+            value={inputText}
+            onChange={setInputText}
+            onSend={handleSendMessage}
+          />
+        </div>
       </div>
     </div>
   );

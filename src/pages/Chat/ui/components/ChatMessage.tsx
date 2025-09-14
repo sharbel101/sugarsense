@@ -12,7 +12,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ text, isUser }) => {
         className={`max-w-[85%] break-words p-3 shadow-sm ${
           isUser
             ? 'bg-green-500 text-white rounded-t-2xl rounded-l-2xl rounded-br-lg'
-            : 'bg-white text-gray-800 rounded-t-2xl rounded-r-2xl rounded-bl-lg'
+            : 'bg-green-100 text-green-800 rounded-t-2xl rounded-r-2xl rounded-bl-lg'
         } md:max-w-[70%]`}
       >
         {text}
