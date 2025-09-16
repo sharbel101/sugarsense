@@ -7,8 +7,9 @@ import { getBotResponse } from '../../botMessages';
 
 interface Message {
   id: number;
-  text: string;
+  text?: string;
   isUser: boolean;
+  image?: string;
 }
 
 export const Page: React.FC = () => {
@@ -47,11 +48,31 @@ export const Page: React.FC = () => {
     }
   };
 
+  const handleSendImage = (image: string) => {
+    const newUserMessage: Message = {
+      id: Date.now(),
+      isUser: true,
+      image: image,
+    };
+
+    setMessages((prev) => [...prev, newUserMessage]);
+
+    // Simulate bot response
+    setTimeout(() => {
+      const botResponse: Message = {
+        id: Date.now() + 1,
+        text: 'I received your image!',
+        isUser: false,
+      };
+      setMessages((prev) => [...prev, botResponse]);
+    }, 1000);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
       {/* Header and Sidebar components (Header is fixed via its CSS) */}
-  <Header onToggleSidebar={() => setIsSidebarOpen((s) => !s)} />
-  <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Header onToggleSidebar={() => setIsSidebarOpen((s) => !s)} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Chat messages container - account for fixed header (h-16) and fixed input (approx 76px) */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-[92px]">
@@ -60,6 +81,7 @@ export const Page: React.FC = () => {
             key={message.id}
             text={message.text}
             isUser={message.isUser}
+            image={message.image}
           />
         ))}
         <div ref={messagesEndRef} />
@@ -72,6 +94,7 @@ export const Page: React.FC = () => {
             value={inputText}
             onChange={setInputText}
             onSend={handleSendMessage}
+            onSendImage={handleSendImage}
           />
         </div>
       </div>
