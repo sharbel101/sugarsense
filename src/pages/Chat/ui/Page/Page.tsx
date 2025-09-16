@@ -3,6 +3,7 @@ import { ChatMessage } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
 import Header from '@/components/Header/Header';
 import Sidebar from '@/components/Sidebar/Sidebar';
+import { getBotResponse } from '../../botMessages';
 
 interface Message {
   id: number;
@@ -23,9 +24,10 @@ export const Page: React.FC = () => {
 
   const handleSendMessage = () => {
     if (inputText.trim()) {
+      const userMessageText = inputText.trim();
       const newUserMessage: Message = {
         id: Date.now(),
-        text: inputText,
+        text: userMessageText,
         isUser: true,
       };
 
@@ -34,9 +36,10 @@ export const Page: React.FC = () => {
 
       // Simulate bot response
       setTimeout(() => {
+        const botResponseText = getBotResponse(userMessageText);
         const botResponse: Message = {
           id: Date.now() + 1,
-          text: 'This is a sample bot response.',
+          text: botResponseText,
           isUser: false,
         };
         setMessages((prev) => [...prev, botResponse]);
