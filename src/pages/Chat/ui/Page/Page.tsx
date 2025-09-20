@@ -17,13 +17,27 @@ const formatApiResponse = (text: string): JSX.Element[] => {
   if (!text) return [];
 
   return text.split('\n').map((line, i) => {
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith('-')) {
+      const parts = trimmedLine.substring(1).split(':');
+      if (parts.length > 1) {
+        const ingredient = parts[0].trim();
+        const values = parts[1].trim();
+        return (
+          <div key={i} style={{ marginLeft: '20px' }}>
+            <em>{ingredient}</em>: {values}
+          </div>
+        );
+      }
+    }
+    
     const parts = line.split(':');
     if (parts.length > 1) {
-      const food = parts[0].trim();
-      const value = parts[1].trim();
+      const item = parts[0].trim();
+      const values = parts[1].trim();
       return (
         <div key={i}>
-          <strong>{food}</strong>: {value}
+          <strong>{item}</strong>: {values}
         </div>
       );
     }
@@ -100,17 +114,21 @@ export const Page: React.FC = () => {
 
       // Call the Gemini API
       const hardcodedMessage = `
-Predict the carbohydrate content of the foods in this image.
+Provide a detailed breakdown of the carbohydrate and calorie content for each food item in this image. If an item is composed of multiple ingredients (like a burger), break it down into its main components (e.g., bun, patty, sauce, cheese).
 
 Respond ONLY in this format:
-<Food name>: <carb amount> g
+<Food name>: <carb amount> g, <calorie amount> cals
+  - <Ingredient 1>: <carb amount> g, <calorie amount> cals
+  - <Ingredient 2>: <carb amount> g, <calorie amount> cals
 
-List each food on its own line. After all foods, add:
-Total: <sum of carbs> g of carbs 
+List each food and its ingredients on its own line. After all foods, add:
+Total: <sum of carbs> g, <sum of calories> cals
 
 Rules:
-- Use a colon (:) between the food name and the carb value.
-- Do not include explanations, bullet points, or markdown.
+- Use a colon (:) after the main food name.
+- Use a dash (-) for sub-ingredients, and indent them.
+- Separate carbs and calories with a comma.
+- Do not include explanations, bullet points, or markdown (except for the dashes for ingredients).
 - Keep it plain text only.
 The user also said:
 `;
@@ -134,7 +152,7 @@ The user also said:
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === loadingMsgId
-            ? { ...msg, text: "Sorry, I couldn't analyze the image. Please try again." }
+            ? { ...msg, text: "Sorry, I couldn't analyze the image. Please try again." } 
             : msg
         )
       );
