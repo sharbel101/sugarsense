@@ -4,7 +4,7 @@ interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
-  onSendImage: (image: string) => void;
+  onSendImage: (image: File) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -22,8 +22,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      onSendImage(imageUrl);
+      onSendImage(file);
     }
   };
 

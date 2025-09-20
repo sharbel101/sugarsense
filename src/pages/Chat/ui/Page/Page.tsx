@@ -4,13 +4,32 @@ import { ChatInput } from '../components/ChatInput';
 import Header from '@/components/Header/Header';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import { getBotResponse } from '../../botMessages';
+import { getCarbPrediction, resizeImage } from '@/api/imageApi';
 
 interface Message {
   id: number;
-  text?: string;
+  text?: string | JSX.Element[];
   isUser: boolean;
   image?: string;
 }
+
+const formatApiResponse = (text: string): JSX.Element[] => {
+  if (!text) return [];
+
+  return text.split('\n').map((line, i) => {
+    const parts = line.split(':');
+    if (parts.length > 1) {
+      const food = parts[0].trim();
+      const value = parts[1].trim();
+      return (
+        <div key={i}>
+          <strong>{food}</strong>: {value}
+        </div>
+      );
+    }
+    return <div key={i}>{line}</div>;
+  });
+};
 
 export const Page: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -26,6 +45,7 @@ export const Page: React.FC = () => {
   const handleSendMessage = () => {
     if (inputText.trim()) {
       const userMessageText = inputText.trim();
+      console.log('[Page.tsx] handleSendMessage: Sending message:', userMessageText);
       const newUserMessage: Message = {
         id: Date.now(),
         text: userMessageText,
@@ -38,6 +58,7 @@ export const Page: React.FC = () => {
       // Simulate bot response
       setTimeout(() => {
         const botResponseText = getBotResponse(userMessageText);
+        console.log('[Page.tsx] handleSendMessage: Received bot response:', botResponseText);
         const botResponse: Message = {
           id: Date.now() + 1,
           text: botResponseText,
@@ -48,24 +69,76 @@ export const Page: React.FC = () => {
     }
   };
 
-  const handleSendImage = (image: string) => {
+  const handleSendImage = async (imageFile: File) => {
+    console.log('[Page.tsx] handleSendImage: Received image file:', imageFile);
+    const userMessageText = inputText.trim();
+    setInputText('');
+
+    // Show user's message with image
+    const imageUrl = URL.createObjectURL(imageFile);
     const newUserMessage: Message = {
       id: Date.now(),
       isUser: true,
-      image: image,
+      image: imageUrl,
+      text: userMessageText,
     };
 
-    setMessages((prev) => [...prev, newUserMessage]);
+    // Add a loading message
+    const loadingMsgId = Date.now() + 1;
+    const loadingMsg: Message = {
+      id: loadingMsgId,
+      isUser: false,
+      text: 'Analyzing image...',
+    };
+    setMessages((prev) => [...prev, newUserMessage, loadingMsg]);
 
-    // Simulate bot response
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: Date.now() + 1,
-        text: 'I received your image!',
-        isUser: false,
-      };
-      setMessages((prev) => [...prev, botResponse]);
-    }, 1000);
+    try {
+      // Resize the image
+      console.log('[Page.tsx] handleSendImage: Resizing image...');
+      const resizedImage = await resizeImage(imageFile, 512, 512);
+      console.log('[Page.tsx] handleSendImage: Image resized:', resizedImage);
+
+      // Call the Gemini API
+      const hardcodedMessage = `
+Predict the carbohydrate content of the foods in this image.
+
+Respond ONLY in this format:
+<Food name>: <carb amount> g
+
+List each food on its own line. After all foods, add:
+Total: <sum of carbs> g of carbs 
+
+Rules:
+- Use a colon (:) between the food name and the carb value.
+- Do not include explanations, bullet points, or markdown.
+- Keep it plain text only.
+The user also said:
+`;
+
+      const fullMessage = hardcodedMessage + userMessageText;
+      console.log('[Page.tsx] handleSendImage: Calling getCarbPrediction with message:', fullMessage);
+      const predictionText = await getCarbPrediction(fullMessage, resizedImage);
+      console.log('[Page.tsx] handleSendImage: Received prediction:', predictionText);
+
+      const formattedResponse = formatApiResponse(predictionText);
+
+      // Update loading message with the prediction
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === loadingMsgId ? { ...msg, text: formattedResponse } : msg
+        )
+      );
+    } catch (error) {
+      console.error('[Page.tsx] handleSendImage: Error getting prediction:', error);
+      // Update loading message with an error
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === loadingMsgId
+            ? { ...msg, text: "Sorry, I couldn't analyze the image. Please try again." }
+            : msg
+        )
+      );
+    }
   };
 
   return (
