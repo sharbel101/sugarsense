@@ -17,7 +17,7 @@ const formatApiResponse = (text: string): JSX.Element[] => {
   if (!text) return [];
 
   const elements: JSX.Element[] = [];
-  let totalCarbs: number = 0; // store total carbs for later use
+  let totalCarbs: number = 0; // store total carbs
 
   text.split('\n').forEach((line, i) => {
     const trimmedLine = line.trim();
