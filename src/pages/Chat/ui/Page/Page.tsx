@@ -16,33 +16,64 @@ interface Message {
 const formatApiResponse = (text: string): JSX.Element[] => {
   if (!text) return [];
 
-  return text.split('\n').map((line, i) => {
+  const elements: JSX.Element[] = [];
+  let totalCarbs: number = 0; // store total carbs for later use
+
+  text.split('\n').forEach((line, i) => {
     const trimmedLine = line.trim();
+
+    // Handle sub-ingredients
     if (trimmedLine.startsWith('-')) {
       const parts = trimmedLine.substring(1).split(':');
       if (parts.length > 1) {
         const ingredient = parts[0].trim();
         const values = parts[1].trim();
-        return (
+        elements.push(
           <div key={i} style={{ marginLeft: '20px' }}>
             <em>{ingredient}</em>: {values}
           </div>
         );
+        return;
       }
     }
-    
+
+    // Handle main items and totals
     const parts = line.split(':');
     if (parts.length > 1) {
       const item = parts[0].trim();
       const values = parts[1].trim();
-      return (
+
+      elements.push(
         <div key={i}>
           <strong>{item}</strong>: {values}
         </div>
       );
+
+      // Capture total carbs
+      if (item.toLowerCase() === 'total') {
+        const match = values.match(/(\d+)\s*g carbs/i);
+        if (match) {
+          totalCarbs = parseInt(match[1], 10);
+        }
+let bolus = (totalCarbs/15 ) * 4;
+        // Add insulin line using totalCarbs (currently placeholder = 1)
+        elements.push(
+        <div
+  key={`${i}-insulin`}
+  style={{ fontWeight: 'bold', fontSize: '1.4em', marginTop: '10px' }}
+>
+  Estimated Insulin Needed: {bolus.toFixed(1)} units
+</div>
+
+        );
+      }
+      return;
     }
-    return <div key={i}>{line}</div>;
+
+    elements.push(<div key={i}>{line}</div>);
   });
+
+  return elements;
 };
 
 export const Page: React.FC = () => {
@@ -117,21 +148,22 @@ export const Page: React.FC = () => {
 Provide a detailed breakdown of the carbohydrate and calorie content for each food item in this image. If an item is composed of multiple ingredients (like a burger), break it down into its main components (e.g., bun, patty, sauce, cheese).
 
 Respond ONLY in this format:
-<Food name>: <carb amount> g, <calorie amount> cals
-  - <Ingredient 1>: <carb amount> g, <calorie amount> cals
-  - <Ingredient 2>: <carb amount> g, <calorie amount> cals
+<Food name>: <carb amount> g carbs, <calorie amount> cals, <weight> g
+  - <Ingredient 1>: <carb amount> g carbs, <calorie amount> cals, <weight> g
+  - <Ingredient 2>: <carb amount> g carbs, <calorie amount> cals, <weight> g
 
 List each food and its ingredients on its own line. After all foods, add:
-Total: <sum of carbs> g, <sum of calories> cals
+Total: <sum of carbs> g carbs, <sum of calories> cals, <sum of weight> g
 
 Rules:
 - Use a colon (:) after the main food name.
 - Use a dash (-) for sub-ingredients, and indent them.
-- Separate carbs and calories with a comma.
+- Always say "g carbs" for carbs, "cals" for calories, and "g" for weight.
 - Do not include explanations, bullet points, or markdown (except for the dashes for ingredients).
 - Keep it plain text only.
 The user also said:
 `;
+
 
       const fullMessage = hardcodedMessage + userMessageText;
       console.log('[Page.tsx] handleSendImage: Calling getCarbPrediction with message:', fullMessage);
