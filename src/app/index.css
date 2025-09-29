@@ -20,6 +20,7 @@ html, body {
 	touch-action: manipulation;
 	-webkit-touch-callout: none;
 	-webkit-tap-highlight-color: transparent;
+    overscroll-behavior: contain;
 }
 
 /* Remove iOS rubber-band overscroll glow for the app area */
