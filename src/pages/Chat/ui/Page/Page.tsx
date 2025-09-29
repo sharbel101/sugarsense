@@ -15,47 +15,79 @@ export interface FoodData {
   items: FoodItem[];
   totalCarbs: number;
 }
-
+/**
+ * Strictly parses carbohydrate amounts from a plain-text nutrition breakdown.
+ * - Accepts patterns like: "30 g carbs", "30 grams carbs", "30 g of carbs",
+ *   "30 g carbohydrates", "30 grams of carbohydrates"
+ * - Ignores weights like "220 g" and calories like "480 cals"
+ * - Extracts "Total" carbs if present; otherwise sums parsed item carbs as fallback
+ */
 const formatApiResponse = (text: string): FoodData => {
-  if (!text) return { items: [], totalCarbs: 0 };
+  if (!text || !text.trim()) return { items: [], totalCarbs: 0 };
+
+  // Match exactly the carb token; disallow plain "g" without "carb".
+  // Captures the numeric part in group 1.
+  const CARB_REGEX = /(\d+(?:\.\d+)?)\s*(?:g|gram|grams)\s*(?:of\s*)?(?:carb(?:s)?|carbohydrate(?:s)?)\b/i;
 
   const items: FoodItem[] = [];
-  let totalCarbs: number = 0;
+  let totalCarbs: number | null = null;
 
-  text.split('\n').forEach((line) => {
-    const trimmedLine = line.trim();
-    if (trimmedLine.startsWith('-')) {
-      const parts = trimmedLine.substring(1).split(':');
-      if (parts.length > 1) {
-        const ingredient = parts[0].trim();
-        const values = parts[1].trim();
-        const carbMatch = values.match(/(\d+)\s*g carbs/i);
-        if (carbMatch) {
-          items.push({ name: ingredient, carbs: parseInt(carbMatch[1], 10) });
-        }
-      }
-    } else {
-      const parts = line.split(':');
-      if (parts.length > 1) {
-        const item = parts[0].trim();
-        const values = parts[1].trim();
-        if (item.toLowerCase() === 'total') {
-          const match = values.match(/(\d+)\s*g carbs/i);
-          if (match) {
-            totalCarbs = parseInt(match[1], 10);
-          }
-        } else {
-          const carbMatch = values.match(/(\d+)\s*g carbs/i);
-          if (carbMatch) {
-            items.push({ name: item, carbs: parseInt(carbMatch[1], 10) });
-          }
-        }
-      }
+  // Helper: parse a "values" string (the right side after the colon) for carbs only.
+  const parseCarbsFromValues = (values: string): number | null => {
+    if (!values) return null;
+
+    // Find the FIRST occurrence that explicitly mentions carbs.
+    const match = values.match(CARB_REGEX);
+    if (!match) return null;
+
+    const num = parseFloat(match[1]);
+    if (!isFinite(num) || num < 0) return null;
+
+    // Round to, say, one decimal if you expect decimals; or keep raw.
+    // Keeping raw numeric (no rounding) to preserve fidelity.
+    return num;
+  };
+
+  // Normalize line endings and skip empty lines.
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+  lines.forEach((line) => {
+    // Identify sub-ingredient vs item/total
+    const isSubIngredient = line.startsWith('-');
+
+    // Strip the leading dash for sub-ingredients before splitting on colon.
+    const working = isSubIngredient ? line.replace(/^\-\s*/, '') : line;
+
+    // Split once on the first colon only, to keep values intact.
+    const firstColonIdx = working.indexOf(':');
+    if (firstColonIdx === -1) return; // No "name: values" structure; ignore
+
+    const name = working.slice(0, firstColonIdx).trim();
+    const values = working.slice(firstColonIdx + 1).trim();
+
+    if (!name) return;
+
+    if (/^total$/i.test(name)) {
+      // Parse strictly the carbs from the total line.
+      const t = parseCarbsFromValues(values);
+      if (t !== null) totalCarbs = t;
+      return;
+    }
+
+    // Regular item or sub-ingredient: parse carb value if present.
+    const c = parseCarbsFromValues(values);
+    if (c !== null) {
+      items.push({ name, carbs: c });
     }
   });
 
-  return { items, totalCarbs };
+  // If Total line missing or unparsable, fall back to summing parsed carbs.
+  const computedTotal = items.reduce((acc, it) => acc + it.carbs, 0);
+  const finalTotal = totalCarbs !== null ? totalCarbs : computedTotal;
+
+  return { items, totalCarbs: finalTotal };
 };
+
 
 const renderFoodData = (data: FoodData): JSX.Element[] => {
   const elements: JSX.Element[] = [];
@@ -146,7 +178,7 @@ export const Page: React.FC = () => {
 Provide a detailed breakdown of the carbohydrate and calorie content for each food item in this image. If an item is composed of multiple ingredients (like a burger), break it down into its main components (e.g., bun, patty, sauce, cheese).
 
 Respond ONLY in this format:
-<Food name>: <carb amount> g carbs, <calorie amount> cals, <weight> g
+<Food name>: 
   - <Ingredient 1>: <carb amount> g carbs, <calorie amount> cals, <weight> g
   - <Ingredient 2>: <carb amount> g carbs, <calorie amount> cals, <weight> g
 
