@@ -138,7 +138,7 @@ export const Page: React.FC = () => {
       isUser: false,
       text: 'Analyzing image...',
     };
-    setMessages((prev) => [...prev, newUserMessage, loadingMsg]);
+    setMessages((prev) => [...prev.filter(m => m.isUser || !(typeof m.text === 'object' && m.text !== null && 'items' in m.text)), newUserMessage, loadingMsg]);
 
     try {
       const resizedImage = await resizeImage(imageFile, 512, 512);
