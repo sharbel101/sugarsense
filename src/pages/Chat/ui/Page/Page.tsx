@@ -1,77 +1,87 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChatMessage } from '../components/ChatMessage';
+import { ChatMessage, Message } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
 import Header from '@/components/Header/Header';
 import Sidebar from '@/components/Sidebar/Sidebar';
 import { getBotResponse } from '../../botMessages';
 import { getCarbPrediction, resizeImage } from '@/api/imageApi';
 
-interface Message {
-  id: number;
-  text?: string | JSX.Element[];
-  isUser: boolean;
-  image?: string;
+export interface FoodItem {
+  name: string;
+  carbs: number;
 }
 
-const formatApiResponse = (text: string): JSX.Element[] => {
-  if (!text) return [];
+export interface FoodData {
+  items: FoodItem[];
+  totalCarbs: number;
+}
 
-  const elements: JSX.Element[] = [];
-  let totalCarbs: number = 0; // store total carbs
+const formatApiResponse = (text: string): FoodData => {
+  if (!text) return { items: [], totalCarbs: 0 };
 
-  text.split('\n').forEach((line, i) => {
+  const items: FoodItem[] = [];
+  let totalCarbs: number = 0;
+
+  text.split('\n').forEach((line) => {
     const trimmedLine = line.trim();
-
-    // Handle sub-ingredients
     if (trimmedLine.startsWith('-')) {
       const parts = trimmedLine.substring(1).split(':');
       if (parts.length > 1) {
         const ingredient = parts[0].trim();
         const values = parts[1].trim();
-        elements.push(
-          <div key={i} style={{ marginLeft: '20px' }}>
-            <em>{ingredient}</em>: {values}
-          </div>
-        );
-        return;
-      }
-    }
-
-    // Handle main items and totals
-    const parts = line.split(':');
-    if (parts.length > 1) {
-      const item = parts[0].trim();
-      const values = parts[1].trim();
-
-      elements.push(
-        <div key={i}>
-          <strong>{item}</strong>: {values}
-        </div>
-      );
-
-      // Capture total carbs
-      if (item.toLowerCase() === 'total') {
-        const match = values.match(/(\d+)\s*g carbs/i);
-        if (match) {
-          totalCarbs = parseInt(match[1], 10);
+        const carbMatch = values.match(/(\d+)\s*g carbs/i);
+        if (carbMatch) {
+          items.push({ name: ingredient, carbs: parseInt(carbMatch[1], 10) });
         }
-let bolus = (totalCarbs/15 ) * 4;
-        // Add insulin line using totalCarbs (currently placeholder = 1)
-        elements.push(
-        <div
-  key={`${i}-insulin`}
-  style={{ fontWeight: 'bold', fontSize: '1.4em', marginTop: '10px' }}
->
-  Estimated Insulin Needed: {bolus.toFixed(1)} units
-</div>
-
-        );
       }
-      return;
+    } else {
+      const parts = line.split(':');
+      if (parts.length > 1) {
+        const item = parts[0].trim();
+        const values = parts[1].trim();
+        if (item.toLowerCase() === 'total') {
+          const match = values.match(/(\d+)\s*g carbs/i);
+          if (match) {
+            totalCarbs = parseInt(match[1], 10);
+          }
+        } else {
+          const carbMatch = values.match(/(\d+)\s*g carbs/i);
+          if (carbMatch) {
+            items.push({ name: item, carbs: parseInt(carbMatch[1], 10) });
+          }
+        }
+      }
     }
-
-    elements.push(<div key={i}>{line}</div>);
   });
+
+  return { items, totalCarbs };
+};
+
+const renderFoodData = (data: FoodData): JSX.Element[] => {
+  const elements: JSX.Element[] = [];
+  data.items.forEach((item, i) => {
+    elements.push(
+      <div key={i}>
+        <strong>{item.name}</strong>: {item.carbs}g carbs
+      </div>
+    );
+  });
+
+  elements.push(
+    <div key="total">
+      <strong>Total</strong>: {data.totalCarbs}g carbs
+    </div>
+  );
+
+  let bolus = (data.totalCarbs / 15) * 4;
+  elements.push(
+    <div
+      key="insulin"
+      style={{ fontWeight: 'bold', fontSize: '1.4em', marginTop: '10px' }}
+    >
+      Estimated Insulin Needed: {bolus.toFixed(1)} units
+    </div>
+  );
 
   return elements;
 };
@@ -82,7 +92,6 @@ export const Page: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-  // Scroll to bottom when new messages are added
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -90,7 +99,6 @@ export const Page: React.FC = () => {
   const handleSendMessage = () => {
     if (inputText.trim()) {
       const userMessageText = inputText.trim();
-      console.log('[Page.tsx] handleSendMessage: Sending message:', userMessageText);
       const newUserMessage: Message = {
         id: Date.now(),
         text: userMessageText,
@@ -100,10 +108,8 @@ export const Page: React.FC = () => {
       setMessages((prev) => [...prev, newUserMessage]);
       setInputText('');
 
-      // Simulate bot response
       setTimeout(() => {
         const botResponseText = getBotResponse(userMessageText);
-        console.log('[Page.tsx] handleSendMessage: Received bot response:', botResponseText);
         const botResponse: Message = {
           id: Date.now() + 1,
           text: botResponseText,
@@ -115,11 +121,9 @@ export const Page: React.FC = () => {
   };
 
   const handleSendImage = async (imageFile: File) => {
-    console.log('[Page.tsx] handleSendImage: Received image file:', imageFile);
     const userMessageText = inputText.trim();
     setInputText('');
 
-    // Show user's message with image
     const imageUrl = URL.createObjectURL(imageFile);
     const newUserMessage: Message = {
       id: Date.now(),
@@ -128,7 +132,6 @@ export const Page: React.FC = () => {
       text: userMessageText,
     };
 
-    // Add a loading message
     const loadingMsgId = Date.now() + 1;
     const loadingMsg: Message = {
       id: loadingMsgId,
@@ -138,12 +141,7 @@ export const Page: React.FC = () => {
     setMessages((prev) => [...prev, newUserMessage, loadingMsg]);
 
     try {
-      // Resize the image
-      console.log('[Page.tsx] handleSendImage: Resizing image...');
       const resizedImage = await resizeImage(imageFile, 512, 512);
-      console.log('[Page.tsx] handleSendImage: Image resized:', resizedImage);
-
-      // Call the Gemini API
       const hardcodedMessage = `
 Provide a detailed breakdown of the carbohydrate and calorie content for each food item in this image. If an item is composed of multiple ingredients (like a burger), break it down into its main components (e.g., bun, patty, sauce, cheese).
 
@@ -164,15 +162,10 @@ Rules:
 The user also said:
 `;
 
-
       const fullMessage = hardcodedMessage + userMessageText;
-      console.log('[Page.tsx] handleSendImage: Calling getCarbPrediction with message:', fullMessage);
       const predictionText = await getCarbPrediction(fullMessage, resizedImage);
-      console.log('[Page.tsx] handleSendImage: Received prediction:', predictionText);
-
       const formattedResponse = formatApiResponse(predictionText);
 
-      // Update loading message with the prediction
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === loadingMsgId ? { ...msg, text: formattedResponse } : msg
@@ -180,7 +173,6 @@ The user also said:
       );
     } catch (error) {
       console.error('[Page.tsx] handleSendImage: Error getting prediction:', error);
-      // Update loading message with an error
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === loadingMsgId
@@ -191,26 +183,31 @@ The user also said:
     }
   };
 
+  const handleUpdateMessage = (messageId: number, newText: FoodData) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, text: newText } : msg
+      )
+    );
+  };
+
   return (
     <div className="flex flex-col h-screen bg-white overflow-hidden">
-      {/* Header and Sidebar components (Header is fixed via its CSS) */}
       <Header onToggleSidebar={() => setIsSidebarOpen((s) => !s)} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      {/* Chat messages container - account for fixed header (h-16) and fixed input (approx 76px) */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-[92px]">
         {messages.map((message) => (
           <ChatMessage
             key={message.id}
-            text={message.text}
-            isUser={message.isUser}
-            image={message.image}
+            message={message}
+            onUpdateMessage={handleUpdateMessage}
+            renderFoodData={renderFoodData}
           />
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Fixed input at bottom */}
       <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-2">
         <div className="mx-auto max-w-3xl">
           <ChatInput
