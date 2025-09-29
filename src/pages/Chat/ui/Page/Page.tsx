@@ -224,11 +224,11 @@ The user also said:
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white overflow-hidden">
+    <div className="flex flex-col h-full bg-white overflow-hidden">
       <Header onToggleSidebar={() => setIsSidebarOpen((s) => !s)} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-[92px]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-[92px] app-scroll">
         {messages.map((message) => (
           <ChatMessage
             key={message.id}
