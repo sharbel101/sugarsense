@@ -1,6 +1,4 @@
-/* Glassy iOS-inspired Sidebar Styles */
-
-
+﻿/* Glassy iOS-inspired Sidebar Styles */
 
 /* Custom scrollbar for sidebar */
 .sidebar-content::-webkit-scrollbar {
@@ -40,7 +38,7 @@
 
 /* Sidebar container with glass effect */
 .sidebar-container {
-  padding-top: calc(env(safe-area-inset-top) + 4rem);
+  padding-top: calc(env(safe-area-inset-top) + var(--header-height));
   padding-bottom: env(safe-area-inset-bottom);
   border-top-right-radius: var(--app-radius);
   border-bottom-right-radius: var(--app-radius);
@@ -62,17 +60,8 @@
     min-height: 44px;
     min-width: 44px;
   }
-}
 
-/* Hide sidebar on small screens by default and rely on the slide-out */
-@media (max-width: 768px) {
   .sidebar-container {
     width: 280px;
-  }
-
-  /* Transparent overlay to avoid dimming */
-  .fixed.inset-0.z-30 {
-    z-index: 45;
-    background: transparent !important;
   }
 }
