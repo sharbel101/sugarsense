@@ -1,4 +1,4 @@
-﻿import React, { useRef } from 'react';
+import React, { useRef } from 'react';
 
 interface ChatInputProps {
   value: string;
@@ -15,11 +15,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    onSend();
-  };
-
   const handleCameraClick = () => {
     fileInputRef.current?.click();
   };
@@ -28,37 +23,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     const file = event.target.files?.[0];
     if (file) {
       onSendImage(file);
-      event.target.value = '';
-    }
-  };
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      onSend();
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex w-full items-end gap-2 rounded-3xl bg-white/80 px-3 py-2 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur-lg"
-      style={{ WebkitTapHighlightColor: 'transparent' }}
-    >
+    <div className="flex items-center space-x-2 bg-white">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyPress={(e) => e.key === 'Enter' && onSend()}
+        className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
+        placeholder="Type your message..."
+        style={{ WebkitAppearance: 'none' }}
+      />
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
         accept="image/*"
-        capture="environment"
       />
-
       <button
-        type="button"
         onClick={handleCameraClick}
-        aria-label="Upload an image"
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-inner transition-transform duration-150 hover:bg-gray-200 active:scale-95"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-gray-600 shadow-md transition-all hover:bg-gray-300 active:transform active:scale-95"
         style={{ WebkitTapHighlightColor: 'transparent' }}
       >
         <svg
@@ -67,49 +55,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           fill="currentColor"
           className="h-6 w-6"
         >
-          <path d="M12 9.75a3 3 0 100 6 3 3 0 000-6z" />
+          <path d="M12 12.75a3 3 0 100-6 3 3 0 000 6z" />
           <path
             fillRule="evenodd"
-            d="M4.5 5.25A2.25 2.25 0 012.25 7.5v9a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H16.1a1.5 1.5 0 01-1.3-.75l-.412-.72A1.5 1.5 0 0012.81 3h-1.62a1.5 1.5 0 00-1.579.78l-.41.72a1.5 1.5 0 01-1.3.75H4.5zM12 8.25a4.5 4.5 0 100 9 4.5 4.5 0 000-9z"
+            d="M2.25 5.625A3.375 3.375 0 015.625 2.25h12.75c1.86 0 3.375 1.515 3.375 3.375v10.5c0 1.86-1.515 3.375-3.375 3.375H5.625A3.375 3.375 0 012.25 16.125v-10.5zM5.625 3.75c-.98 0-1.774.753-1.868 1.718L3.75 5.625v10.5c0 .98.753 1.774 1.718 1.868l.157.007h12.75c.98 0 1.774-.753 1.868-1.718L20.25 16.125v-10.5c0-.98-.753-1.774-1.718-1.868l-.157-.007H5.625z"
             clipRule="evenodd"
           />
         </svg>
       </button>
-
-      <div className="relative flex-1">
-        <input
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type your message..."
-          className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 pr-16 text-base leading-tight text-slate-900 shadow-inner focus:border-green-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-400/60"
-          style={{ fontSize: '16px', WebkitAppearance: 'none' }}
-          autoComplete="sentences"
-          autoCorrect="on"
-          autoCapitalize="sentences"
-          spellCheck
-          enterKeyHint="send"
-        />
-
-        <button
-          type="submit"
-          aria-label="Send message"
-          className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform duration-150 hover:bg-green-600 active:scale-95"
-          style={{ WebkitTapHighlightColor: 'transparent' }}
+      <button
+        onClick={onSend}
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-white shadow-md transition-all hover:bg-green-600 active:transform active:scale-95"
+        style={{ WebkitTapHighlightColor: 'transparent' }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="h-5 w-5"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            className="h-5 w-5"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </button>
-      </div>
-    </form>
+          <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+        </svg>
+      </button>
+    </div>
   );
 };

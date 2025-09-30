@@ -1,4 +1,4 @@
-﻿import { FC } from 'react';
+import { FC } from 'react';
 import './Sidebar.css';
 
 interface SidebarProps {
@@ -9,15 +9,15 @@ interface SidebarProps {
 const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   return (
     <>
+      {/* Sidebar */}
       <div
-        className={`sidebar-container fixed left-0 top-0 z-40 h-full w-64 transform bg-white transition-transform duration-300 ease-in-out ${
+        className={`fixed left-0 top-0 z-40 h-full w-64 transform bg-white transition-transform duration-300 ease-in-out sidebar-container ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:relative md:h-auto md:min-h-full md:translate-x-0 md:flex-shrink-0`}
-        role="navigation"
-        aria-label="Primary"
+        } md:relative md:translate-x-0`}
       >
         <div className="flex h-full flex-col sidebar-inner bg-gray-50 p-4 shadow-lg">
           <div className="mb-8 space-y-4">
+            {/* Add your sidebar content here */}
             <div className="sidebar-option">
               <h3 className="text-lg font-semibold text-gray-800">New Chat</h3>
             </div>
@@ -31,11 +31,10 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose }) => {
         </div>
       </div>
 
+      {/* Overlay */}
       {isOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          aria-label="Close menu"
+        <div
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden"
           onClick={onClose}
         />
       )}

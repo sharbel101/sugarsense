@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { FoodData, FoodItem } from '../Page/Page';
 
 export interface Message {
@@ -15,14 +15,8 @@ interface ChatMessageProps {
 }
 
 // Type guard
-const isFoodData = (v: unknown): v is FoodData =>
-  Boolean(
-    v &&
-      typeof v === 'object' &&
-      'items' in (v as Record<string, unknown>) &&
-      Array.isArray((v as FoodData).items) &&
-      typeof (v as FoodData).totalCarbs === 'number'
-  );
+const isFoodData = (v: any): v is FoodData =>
+  v && typeof v === 'object' && Array.isArray(v.items) && typeof v.totalCarbs === 'number';
 
 const sanitizeCarbs = (val: string | number): number => {
   const n = typeof val === 'number' ? val : Number(val);
@@ -42,13 +36,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   const handleEdit = () => {
     if (isFoodData(text)) {
-      setFoodItems(text.items.map((item) => ({ name: item.name, carbs: sanitizeCarbs(item.carbs) })));
+      setFoodItems(text.items.map(it => ({ name: it.name, carbs: sanitizeCarbs(it.carbs) })));
       setEditMode(true);
     }
   };
 
   const handleCarbChange = (index: number, value: string) => {
-    setFoodItems((prev) => {
+    setFoodItems(prev => {
       const next = [...prev];
       next[index] = { ...next[index], carbs: sanitizeCarbs(value) };
       return next;
@@ -56,10 +50,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   const handleSave = () => {
-    const newTotalCarbs = foodItems.reduce((acc, item) => acc + sanitizeCarbs(item.carbs), 0);
+    const newTotalCarbs = foodItems.reduce((acc, it) => acc + sanitizeCarbs(it.carbs), 0);
 
+    // Send updated data back up; bolus is recalculated inside renderFoodData in Page.tsx
     onUpdateMessage(message.id, {
-      items: foodItems.map((item) => ({ name: item.name, carbs: sanitizeCarbs(item.carbs) })),
+      items: foodItems.map(it => ({ name: it.name, carbs: sanitizeCarbs(it.carbs) })),
       totalCarbs: Math.round(newTotalCarbs * 10) / 10,
     });
 
@@ -69,44 +64,24 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`relative max-w-[92%] rounded-3xl px-4 py-3 shadow-sm transition-transform sm:max-w-[70%] ${
+        className={`max-w-[85%] break-words p-3 shadow-sm ${
           isUser
-            ? 'bg-green-500 text-white shadow-[0_8px_16px_rgba(34,197,94,0.25)]'
-            : 'bg-green-50 text-green-900 shadow-[0_6px_16px_rgba(15,23,42,0.06)]'
-        }`}
+            ? 'bg-green-500 text-white rounded-t-2xl rounded-l-2xl rounded-br-lg'
+            : 'bg-green-100 text-green-800 rounded-t-2xl rounded-r-2xl rounded-bl-lg'
+        } md:max-w-[70%]`}
       >
-        {typeof text === 'string' && (
-          <p className="whitespace-pre-wrap text-base leading-relaxed">{text}</p>
-        )}
-
-        {Array.isArray(text) && <div className="space-y-1 text-base leading-relaxed">{text}</div>}
-
-        {isFoodData(text) && !editMode && (
-          <div className="space-y-1 text-base leading-relaxed">
-            {renderFoodData(text)}
-          </div>
-        )}
-
-        {image && (
-          <img
-            src={image}
-            alt="User upload"
-            className="mt-3 h-auto max-h-64 w-full rounded-2xl object-cover"
-            loading="lazy"
-          />
-        )}
+        {typeof text === 'string' && <p>{text}</p>}
+        {Array.isArray(text) && text}
+        {isFoodData(text) && !editMode && renderFoodData(text)}
+        {image && <img src={image} alt="User upload" className="rounded-lg" />}
 
         {!isUser && isFoodData(text) && !editMode && (
-          <div className="mt-3 flex justify-end gap-2">
-            <button
-              type="button"
-              className="rounded-full bg-green-500 px-4 py-1.5 text-sm font-semibold text-white shadow hover:bg-green-600"
-            >
+          <div className="flex justify-end mt-2">
+            <button className="bg-green-500 text-white px-4 py-1 rounded-lg mr-2">
               Approve
             </button>
             <button
-              type="button"
-              className="rounded-full bg-red-500 px-4 py-1.5 text-sm font-semibold text-white shadow hover:bg-red-600"
+              className="bg-red-500 text-white px-4 py-1 rounded-lg"
               onClick={handleEdit}
             >
               Edit
@@ -115,39 +90,37 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         )}
 
         {!isUser && editMode && (
-          <div className="mt-2 space-y-2">
+          <div>
             {foodItems.map((item, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <span className="text-sm font-medium text-green-900">{item.name}</span>
+              <div key={index} className="flex items-center mt-2">
+                <span className="mr-2">{item.name}</span>
                 <input
                   type="number"
                   step="0.1"
                   inputMode="decimal"
                   value={item.carbs}
-                  onChange={(event) => handleCarbChange(index, event.target.value)}
-                  className="w-24 rounded-xl border border-green-300 bg-green-100 px-2 py-1 text-base text-green-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-400/60"
+                  onChange={(e) => handleCarbChange(index, e.target.value)}
+                  className="w-24 p-1 border rounded-lg bg-green-200 text-green-800"
                   aria-label={`${item.name} carbs (g)`}
-                  style={{ fontSize: '16px' }}
                 />
-                <span className="text-sm font-medium text-green-900">g carbs</span>
+                <span className="ml-2">g carbs</span>
               </div>
             ))}
 
-            <div className="pt-1 text-sm font-semibold text-green-900">
-              Total (preview): {foodItems.reduce((acc, item) => acc + sanitizeCarbs(item.carbs), 0).toFixed(1)}g carbs
+            {/* Just show live total here, no bolus calc duplication */}
+            <div className="mt-3 font-semibold">
+              Total (preview): {foodItems.reduce((acc, it) => acc + sanitizeCarbs(it.carbs), 0).toFixed(1)}g carbs
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end mt-3">
               <button
-                type="button"
-                className="rounded-full bg-gray-200 px-4 py-1.5 text-sm font-semibold text-gray-700 shadow hover:bg-gray-300"
+                className="bg-gray-300 text-gray-800 px-4 py-1 rounded-lg mr-2"
                 onClick={() => setEditMode(false)}
               >
                 Cancel
               </button>
               <button
-                type="button"
-                className="rounded-full bg-green-500 px-4 py-1.5 text-sm font-semibold text-white shadow hover:bg-green-600"
+                className="bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-1 rounded-lg"
                 onClick={handleSave}
               >
                 Save
