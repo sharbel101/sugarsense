@@ -128,20 +128,6 @@ export const Page: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    const handleResize = () => {
-      // When the keyboard closes, the viewport resizes.
-      // We scroll to the bottom to prevent the layout from looking "stuck".
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []); // Empty dependency array means this runs once on mount.
-
   const handleSendMessage = () => {
     if (inputText.trim()) {
       const userMessageText = inputText.trim();
