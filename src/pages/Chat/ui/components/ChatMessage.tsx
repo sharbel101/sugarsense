@@ -74,9 +74,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       >
         {image && (
           <div className="flex flex-col gap-2">
-            <img src={image} alt="User upload" className="rounded-lg" />
+            <img src={image} alt="User upload" className="w-full rounded-2xl object-cover" />
             {hasStringText && (
-              <p className="text-sm leading-snug">{stringText}</p>
+              <p className="text-base leading-snug">{stringText}</p>
             )}
           </div>
         )}
@@ -142,3 +142,4 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     </div>
   );
 };
+

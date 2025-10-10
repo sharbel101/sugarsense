@@ -258,7 +258,7 @@ The user also said:
       <Header onToggleSidebar={() => setIsSidebarOpen((s) => !s)} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-[92px] app-scroll">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-36 app-scroll" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 9rem)' }}>
         {messages.map((message) => (
           <ChatMessage
             key={message.id}
@@ -270,8 +270,11 @@ The user also said:
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-2">
-        <div className="mx-auto max-w-3xl">
+      <footer className="sticky bottom-0 left-0 z-20 w-full border-t border-gray-200 bg-white/95 backdrop-blur">
+        <div
+          className="mx-auto flex w-full max-w-3xl px-3 pt-2"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+        >
           <ChatInput
             value={inputText}
             onChange={setInputText}
@@ -282,7 +285,9 @@ The user also said:
             imagePreviewUrl={pendingImage?.previewUrl}
           />
         </div>
-      </div>
+      </footer>
     </div>
   );
 };
+
+

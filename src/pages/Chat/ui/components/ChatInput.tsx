@@ -55,7 +55,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex w-full items-end gap-2 rounded-3xl bg-white/80 px-3 py-2 shadow-[0_8px_24px_rgba(15,23,42,0.12)] backdrop-blur-lg"
+      className="flex w-full flex-col gap-3 rounded-3xl bg-white/95 px-3 py-3 shadow-[0_8px_24px_rgba(15,23,42,0.08)] backdrop-blur-lg"
       style={{ WebkitTapHighlightColor: 'transparent' }}
     >
       <input
@@ -66,54 +66,54 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         accept="image/*"
       />
 
-      <button
-        type="button"
-        onClick={handleCameraClick}
-        aria-label="Upload an image"
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-inner transition-transform duration-150 hover:bg-gray-200 active:scale-95"
-        style={{ WebkitTapHighlightColor: 'transparent' }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="h-6 w-6"
-        >
-          <path d="M12 9.75a3 3 0 100 6 3 3 0 000-6z" />
-          <path
-            fillRule="evenodd"
-            d="M4.5 5.25A2.25 2.25 0 012.25 7.5v9a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H16.1a1.5 1.5 0 01-1.3-.75l-.412-.72A1.5 1.5 0 0012.81 3h-1.62a1.5 1.5 0 00-1.579.78l-.41.72a1.5 1.5 0 01-1.3.75H4.5zM12 8.25a4.5 4.5 0 100 9 4.5 4.5 0 000-9z"
-            clipRule="evenodd"
+      {imagePreviewUrl && (
+        <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-inner">
+          <img
+            src={imagePreviewUrl}
+            alt="Selected preview"
+            className="h-14 w-14 rounded-xl object-cover"
           />
-        </svg>
-      </button>
+          <button
+            type="button"
+            onClick={onRemoveImage}
+            className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-200"
+          >
+            Remove
+          </button>
+        </div>
+      )}
 
-      <div className="relative flex-1">
-        {imagePreviewUrl && (
-          <div className="mb-2 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/90 px-3 py-2 shadow-inner">
-            <img
-              src={imagePreviewUrl}
-              alt="Selected preview"
-              className="h-12 w-12 rounded-xl object-cover"
+      <div className="flex items-end gap-3">
+        <button
+          type="button"
+          onClick={handleCameraClick}
+          aria-label="Upload an image"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-inner transition-transform duration-150 hover:bg-gray-200 active:scale-95"
+          style={{ WebkitTapHighlightColor: 'transparent' }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="h-6 w-6"
+          >
+            <path d="M12 9.75a3 3 0 100 6 3 3 0 000-6z" />
+            <path
+              fillRule="evenodd"
+              d="M4.5 5.25A2.25 2.25 0 012.25 7.5v9a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H16.1a1.5 1.5 0 01-1.3-.75l-.412-.72A1.5 1.5 0 0012.81 3h-1.62a1.5 1.5 0 00-1.579.78l-.41.72a1.5 1.5 0 01-1.3.75H4.5zM12 8.25a4.5 4.5 0 100 9 4.5 4.5 0 000-9z"
+              clipRule="evenodd"
             />
-            <button
-              type="button"
-              onClick={onRemoveImage}
-              className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-200"
-            >
-              Remove
-            </button>
-          </div>
-        )}
+          </svg>
+        </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 shadow-inner focus-within:border-green-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-400/50">
           <input
             type="text"
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={hasPendingImage ? 'Add a comment' : 'Type your message...'}
-            className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-tight text-slate-900 shadow-inner focus:border-green-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-400/60"
+            className="flex-1 bg-transparent text-base leading-tight text-slate-900 outline-none"
             style={{ fontSize: '16px', WebkitAppearance: 'none' }}
             autoComplete="sentences"
             autoCorrect="on"
@@ -126,10 +126,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             type="submit"
             aria-label="Send message"
             disabled={isSendDisabled}
-            className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-transform duration-150 ${
+            className={`flex h-11 w-11 items-center justify-center rounded-full text-white transition-transform duration-150 ${
               isSendDisabled
                 ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-green-500 hover:bg-green-600 active:scale-95'
+                : 'bg-green-500 hover:bg-green-600 active:scale-95 shadow-lg'
             }`}
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
