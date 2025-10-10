@@ -1,4 +1,4 @@
-﻿import React, { useRef } from 'react';
+import React, { useRef } from 'react';
 
 interface ChatInputProps {
   value: string;
@@ -51,7 +51,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         onChange={handleFileChange}
         className="hidden"
         accept="image/*"
-        capture="environment"
       />
 
       <button
@@ -113,3 +112,4 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     </form>
   );
 };
+
