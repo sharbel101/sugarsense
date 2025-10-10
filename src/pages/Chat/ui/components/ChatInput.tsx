@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+﻿import React, { useRef } from 'react';
 
 interface ChatInputProps {
   value: string;
@@ -83,7 +83,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
 
-      <div className="flex items-end gap-3">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={handleCameraClick}
@@ -126,7 +126,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             type="submit"
             aria-label="Send message"
             disabled={isSendDisabled}
-            className={`flex h-11 w-11 items-center justify-center rounded-full text-white transition-transform duration-150 ${
+            className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-150 ${
               isSendDisabled
                 ? 'bg-gray-300 cursor-not-allowed'
                 : 'bg-green-500 hover:bg-green-600 active:scale-95 shadow-lg'
@@ -149,3 +149,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     </form>
   );
 };
+
+
+
