@@ -30,6 +30,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   renderFoodData,
 }) => {
   const { text, isUser, image } = message;
+  const stringText = typeof text === 'string' ? text : undefined;
+  const hasStringText = Boolean(stringText && stringText.trim().length > 0);
 
   const [editMode, setEditMode] = useState(false);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
@@ -64,16 +66,24 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[85%] break-words p-3 shadow-sm ${
+        className={`max-w-[85%] break-words p-3 shadow-sm md:max-w-[70%] flex flex-col gap-3 ${
           isUser
             ? 'bg-green-500 text-white rounded-t-2xl rounded-l-2xl rounded-br-lg'
             : 'bg-green-100 text-green-800 rounded-t-2xl rounded-r-2xl rounded-bl-lg'
-        } md:max-w-[70%]`}
+        }`}
       >
-        {typeof text === 'string' && <p>{text}</p>}
+        {image && (
+          <div className="flex flex-col gap-2">
+            <img src={image} alt="User upload" className="rounded-lg" />
+            {hasStringText && (
+              <p className="text-sm leading-snug">{stringText}</p>
+            )}
+          </div>
+        )}
+
+        {!image && hasStringText && <p>{stringText}</p>}
         {Array.isArray(text) && text}
         {isFoodData(text) && !editMode && renderFoodData(text)}
-        {image && <img src={image} alt="User upload" className="rounded-lg" />}
 
         {!isUser && isFoodData(text) && !editMode && (
           <div className="flex justify-end mt-2">

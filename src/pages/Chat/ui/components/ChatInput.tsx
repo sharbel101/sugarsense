@@ -4,19 +4,28 @@ interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
-  onSendImage: (image: File) => void;
+  onSelectImage: (image: File) => void;
+  onRemoveImage: () => void;
+  hasPendingImage: boolean;
+  imagePreviewUrl?: string;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChange,
   onSend,
-  onSendImage,
+  onSelectImage,
+  onRemoveImage,
+  hasPendingImage,
+  imagePreviewUrl,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const isSendDisabled = !value.trim() && !hasPendingImage;
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSendDisabled) return;
     onSend();
   };
 
@@ -27,13 +36,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      onSendImage(file);
+      onSelectImage(file);
       event.target.value = '';
     }
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
+      if (isSendDisabled) {
+        event.preventDefault();
+        return;
+      }
       event.preventDefault();
       onSend();
     }
@@ -76,40 +89,63 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       </button>
 
       <div className="relative flex-1">
-        <input
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Type your message..."
-          className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 pr-16 text-base leading-tight text-slate-900 shadow-inner focus:border-green-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-400/60"
-          style={{ fontSize: '16px', WebkitAppearance: 'none' }}
-          autoComplete="sentences"
-          autoCorrect="on"
-          autoCapitalize="sentences"
-          spellCheck
-          enterKeyHint="send"
-        />
+        {imagePreviewUrl && (
+          <div className="mb-2 flex items-center gap-3 rounded-2xl border border-gray-200 bg-white/90 px-3 py-2 shadow-inner">
+            <img
+              src={imagePreviewUrl}
+              alt="Selected preview"
+              className="h-12 w-12 rounded-xl object-cover"
+            />
+            <button
+              type="button"
+              onClick={onRemoveImage}
+              className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-200"
+            >
+              Remove
+            </button>
+          </div>
+        )}
 
-        <button
-          type="submit"
-          aria-label="Send message"
-          className="absolute right-1 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform duration-150 hover:bg-green-600 active:scale-95"
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            className="h-5 w-5"
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={hasPendingImage ? 'Add a comment' : 'Type your message...'}
+            className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-base leading-tight text-slate-900 shadow-inner focus:border-green-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-400/60"
+            style={{ fontSize: '16px', WebkitAppearance: 'none' }}
+            autoComplete="sentences"
+            autoCorrect="on"
+            autoCapitalize="sentences"
+            spellCheck
+            enterKeyHint="send"
+          />
+
+          <button
+            type="submit"
+            aria-label="Send message"
+            disabled={isSendDisabled}
+            className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition-transform duration-150 ${
+              isSendDisabled
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-green-500 hover:bg-green-600 active:scale-95'
+            }`}
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="h-5 w-5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
       </div>
     </form>
   );
 };
-

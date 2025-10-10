@@ -122,59 +122,61 @@ export const Page: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (inputText.trim()) {
-      const userMessageText = inputText.trim();
-      const newUserMessage: Message = {
-        id: Date.now(),
-        text: userMessageText,
-        isUser: true,
+  const handleSelectImage = (imageFile: File) => {
+    setPendingImage((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return {
+        file: imageFile,
+        previewUrl: URL.createObjectURL(imageFile),
       };
-
-      setMessages((prev) => [...prev, newUserMessage]);
-      setInputText('');
-
-      setTimeout(() => {
-        const botResponseText = getBotResponse(userMessageText);
-        const botResponse: Message = {
-          id: Date.now() + 1,
-          text: botResponseText,
-          isUser: false,
-        };
-        setMessages((prev) => [...prev, botResponse]);
-      }, 1000);
-    }
+    });
   };
 
-  const handleSendImage = async (imageFile: File) => {
-    const userMessageText = inputText.trim();
-    setInputText('');
+  const handleRemovePendingImage = () => {
+    setPendingImage((prev) => {
+      if (prev) {
+        URL.revokeObjectURL(prev.previewUrl);
+      }
+      return null;
+    });
+  };
 
-    const imageUrl = URL.createObjectURL(imageFile);
-    const newUserMessage: Message = {
-      id: Date.now(),
-      isUser: true,
-      image: imageUrl,
-      text: userMessageText,
-    };
+  const handleSendMessage = async () => {
+    const trimmedText = inputText.trim();
 
-    const loadingMsgId = Date.now() + 1;
-    const loadingMsg: Message = {
-      id: loadingMsgId,
-      isUser: false,
-      text: 'Analyzing image...',
-    };
-    setMessages((prev) => [...prev, newUserMessage, loadingMsg]);
+    if (pendingImage) {
+      const { file, previewUrl } = pendingImage;
+      const messageIdBase = Date.now();
+      const newUserMessage: Message = {
+        id: messageIdBase,
+        isUser: true,
+        image: previewUrl,
+        ...(trimmedText ? { text: trimmedText } : {}),
+      };
 
-    try {
-      const resizedImage = await resizeImage(imageFile, 512, 512);
-      const hardcodedMessage = `
+      const loadingMsgId = messageIdBase + 1;
+      const loadingMsg: Message = {
+        id: loadingMsgId,
+        isUser: false,
+        text: 'Analyzing image...',
+      };
+
+      setMessages((prev) => [...prev, newUserMessage, loadingMsg]);
+      setInputText('');
+      setPendingImage(null);
+
+      try {
+        const resizedImage = await resizeImage(file, 512, 512);
+        const hardcodedMessage = `
 Provide a detailed breakdown of the carbohydrate and calorie content for each food item in this image. If an item is composed of multiple ingredients (like a burger), break it down into its main components (e.g., bun, patty, sauce, cheese).
 
 Respond ONLY in this format:
@@ -194,25 +196,53 @@ Rules:
 The user also said:
 `;
 
-      const fullMessage = hardcodedMessage + userMessageText;
-      const predictionText = await getCarbPrediction(fullMessage, resizedImage);
-      const formattedResponse = formatApiResponse(predictionText);
+        const userCommentForPrompt = trimmedText || '(No additional comment provided.)';
+        const fullMessage = hardcodedMessage + userCommentForPrompt;
+        const predictionText = await getCarbPrediction(fullMessage, resizedImage);
+        const formattedResponse = formatApiResponse(predictionText);
 
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === loadingMsgId ? { ...msg, text: formattedResponse } : msg
-        )
-      );
-    } catch (error) {
-      console.error('[Page.tsx] handleSendImage: Error getting prediction:', error);
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === loadingMsgId
-            ? { ...msg, text: "Sorry, I couldn't analyze the image. Please try again." } 
-            : msg
-        )
-      );
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === loadingMsgId ? { ...msg, text: formattedResponse } : msg
+          )
+        );
+      } catch (error) {
+        console.error('[Page.tsx] handleSendMessage: Error getting prediction:', error);
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === loadingMsgId
+              ? { ...msg, text: "Sorry, I couldn't analyze the image. Please try again." }
+              : msg
+          )
+        );
+      }
+
+      return;
     }
+
+    if (!trimmedText) {
+      return;
+    }
+
+    const userMessageText = trimmedText;
+    const newUserMessage: Message = {
+      id: Date.now(),
+      text: userMessageText,
+      isUser: true,
+    };
+
+    setMessages((prev) => [...prev, newUserMessage]);
+    setInputText('');
+
+    setTimeout(() => {
+      const botResponseText = getBotResponse(userMessageText);
+      const botResponse: Message = {
+        id: Date.now() + 1,
+        text: botResponseText,
+        isUser: false,
+      };
+      setMessages((prev) => [...prev, botResponse]);
+    }, 1000);
   };
 
   const handleUpdateMessage = (messageId: number, newText: FoodData) => {
@@ -246,7 +276,10 @@ The user also said:
             value={inputText}
             onChange={setInputText}
             onSend={handleSendMessage}
-            onSendImage={handleSendImage}
+            onSelectImage={handleSelectImage}
+            onRemoveImage={handleRemovePendingImage}
+            hasPendingImage={Boolean(pendingImage)}
+            imagePreviewUrl={pendingImage?.previewUrl}
           />
         </div>
       </div>
