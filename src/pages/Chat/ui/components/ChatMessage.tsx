@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FoodData, FoodItem } from '../Page/Page';
+import { FoodData, FoodItem } from '../utils/nutrition';
 
 export interface Message {
   id: number;
@@ -142,4 +142,5 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     </div>
   );
 };
+
 

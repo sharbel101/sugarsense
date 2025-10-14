@@ -1,4 +1,4 @@
-﻿import React, { useRef } from 'react';
+import React, { useRef } from 'react';
 
 interface ChatInputProps {
   value: string;
@@ -8,6 +8,8 @@ interface ChatInputProps {
   onRemoveImage: () => void;
   hasPendingImage: boolean;
   imagePreviewUrl?: string;
+  onToggleMorningMode: () => void;
+  isMorningMode: boolean;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -18,6 +20,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onRemoveImage,
   hasPendingImage,
   imagePreviewUrl,
+  onToggleMorningMode,
+  isMorningMode,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -52,6 +56,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const morningButtonClasses = isMorningMode
+    ? 'border-green-400 bg-green-50 text-green-600 shadow-sm'
+    : 'border-yellow-200 bg-yellow-100/95 text-yellow-700 shadow-inner';
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -83,72 +91,96 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
 
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-2">
         <button
           type="button"
-          onClick={handleCameraClick}
-          aria-label="Upload an image"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-inner transition-transform duration-150 hover:bg-gray-200 active:scale-95"
+          onClick={onToggleMorningMode}
+          aria-pressed={isMorningMode}
+          aria-label="Toggle morning mode"
+          className={`flex h-8 items-center gap-2 self-start rounded-full border px-3 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-300 ${morningButtonClasses}`}
           style={{ WebkitTapHighlightColor: 'transparent' }}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
-            fill="currentColor"
-            className="h-6 w-6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            className="h-3.5 w-3.5"
           >
-            <path d="M12 9.75a3 3 0 100 6 3 3 0 000-6z" />
             <path
-              fillRule="evenodd"
-              d="M4.5 5.25A2.25 2.25 0 012.25 7.5v9a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H16.1a1.5 1.5 0 01-1.3-.75l-.412-.72A1.5 1.5 0 0012.81 3h-1.62a1.5 1.5 0 00-1.579.78l-.41.72a1.5 1.5 0 01-1.3.75H4.5zM12 8.25a4.5 4.5 0 100 9 4.5 4.5 0 000-9z"
-              clipRule="evenodd"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.75V3m0 18v-1.75M20.25 12H22m-20 0h1.75m13.62-6.62l1.24-1.24M4.39 19.61l1.24-1.24m0-10.74L4.39 6.39m13.62 13.22l1.24 1.24M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"
             />
           </svg>
+          Morning
         </button>
 
-        <div className="flex flex-1 items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 shadow-inner focus-within:border-green-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-400/50">
-          <input
-            type="text"
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={hasPendingImage ? 'Add a comment' : 'Type your message...'}
-            className="flex-1 bg-transparent text-base leading-tight text-slate-900 outline-none"
-            style={{ fontSize: '16px', WebkitAppearance: 'none' }}
-            autoComplete="sentences"
-            autoCorrect="on"
-            autoCapitalize="sentences"
-            spellCheck
-            enterKeyHint="send"
-          />
-
+        <div className="flex items-center gap-3">
           <button
-            type="submit"
-            aria-label="Send message"
-            disabled={isSendDisabled}
-            className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-150 ${
-              isSendDisabled
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'bg-green-500 hover:bg-green-600 active:scale-95 shadow-lg'
-            }`}
+            type="button"
+            onClick={handleCameraClick}
+            aria-label="Upload an image"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 shadow-inner transition-transform duration-150 hover:bg-gray-200 active:scale-95"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="h-5 w-5"
+              fill="currentColor"
+              className="h-6 w-6"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+              <path d="M12 9.75a3 3 0 100 6 3 3 0 000-6z" />
+              <path
+                fillRule="evenodd"
+                d="M4.5 5.25A2.25 2.25 0 012.25 7.5v9a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H16.1a1.5 1.5 0 01-1.3-.75l-.412-.72A1.5 1.5 0 0012.81 3h-1.62a1.5 1.5 0 00-1.579.78l-.41.72a1.5 1.5 0 01-1.3.75H4.5zM12 8.25a4.5 4.5 0 100 9 4.5 4.5 0 000-9z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
+
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 shadow-inner focus-within:border-green-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-green-400/50">
+            <input
+              type="text"
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={hasPendingImage ? 'Add a comment' : 'Type your message...'}
+              className="flex-1 bg-transparent text-base leading-tight text-slate-900 outline-none"
+              style={{ fontSize: '16px', WebkitAppearance: 'none' }}
+              autoComplete="sentences"
+              autoCorrect="on"
+              autoCapitalize="sentences"
+              spellCheck
+              enterKeyHint="send"
+            />
+
+            <button
+              type="submit"
+              aria-label="Send message"
+              disabled={isSendDisabled}
+              className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-150 ${
+                isSendDisabled
+                  ? 'bg-gray-300 cursor-not-allowed'
+                  : 'bg-green-500 hover:bg-green-600 active:scale-95 shadow-lg'
+              }`}
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="h-5 w-5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </form>
   );
 };
-
-
-
