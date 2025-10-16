@@ -9,7 +9,7 @@ export const LoginPage: React.FC = () => {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    navigate("/login-values");
+    navigate("/chat");
   };
 
   return (
