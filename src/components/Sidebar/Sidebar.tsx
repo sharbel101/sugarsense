@@ -4,9 +4,19 @@ import './Sidebar.css';
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
+  onLogout?: () => void;
 }
 
-const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose }) => {
+const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
+  const handleLogoutClick = () => {
+    if (onLogout) {
+      onLogout();
+      return;
+    }
+
+    window.location.href = '/login';
+  };
+
   return (
     <>
       {/* Sidebar */}
@@ -28,6 +38,18 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose }) => {
               <h3 className="text-lg font-semibold text-gray-800">Settings</h3>
             </div>
           </div>
+
+          {onLogout && (
+            <div className="mt-auto pt-4">
+              <button
+                type="button"
+                onClick={handleLogoutClick}
+                className="w-full rounded-xl bg-green-500 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:ring-offset-2"
+              >
+                Log out
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

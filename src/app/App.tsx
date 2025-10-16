@@ -1,14 +1,15 @@
 import { FC } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { ChatPage } from "@/pages";
+import { ChatPage, LoginPage, LoginValuesPage } from "@/pages";
 
 const App: FC = () => {
   return (
     <Routes>
-      {/* Render ChatPage at root */}
-      <Route path="/" element={<ChatPage />} />
-      {/* Redirect any unknown path to root chat */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/" element={<LoginPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login-values" element={<LoginValuesPage />} />
+      <Route path="/chat" element={<ChatPage />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 };

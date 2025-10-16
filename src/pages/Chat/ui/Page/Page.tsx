@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChatMessage, Message } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
 import Header from '@/components/Header/Header';
@@ -23,6 +24,7 @@ export const Page: React.FC = () => {
   const [inputText, setInputText] = useState('');
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -153,7 +155,18 @@ export const Page: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden">
       <Header onToggleSidebar={() => setIsSidebarOpen((s) => !s)} />
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onLogout={() => {
+          navigate('/login', { replace: true });
+          setIsSidebarOpen(false);
+          setIsMorningMode(false);
+          setMessages([]);
+          setInputText('');
+          setPendingImage(null);
+        }}
+      />
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 pt-20 pb-36 app-scroll" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 9rem)' }}>
         {messages.map((message) => (
