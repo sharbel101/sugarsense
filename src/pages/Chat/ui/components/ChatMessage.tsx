@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
 import { FoodData, FoodItem } from '../utils/nutrition';
+import { saveMeal } from '@/api/mealsApi';
+import { selectUser } from '@/features/user/userSlice';
 
 export interface Message {
   id: number;
@@ -29,12 +32,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   onUpdateMessage,
   renderFoodData,
 }) => {
+  const user = useSelector(selectUser);
   const { text, isUser, image } = message;
   const stringText = typeof text === 'string' ? text : undefined;
   const hasStringText = Boolean(stringText && stringText.trim().length > 0);
 
   const [editMode, setEditMode] = useState(false);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleEdit = () => {
     if (isFoodData(text)) {
@@ -63,6 +68,59 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     setEditMode(false);
   };
 
+  const handleApprove = async () => {
+    console.log('handleApprove called');
+    console.log('user from Redux:', user);
+    console.log('text (food data):', text);
+    
+    if (!isFoodData(text)) {
+      console.warn('Cannot approve: text is not food data', text);
+      alert('Error: No food data to save');
+      return;
+    }
+
+    if (!user?.id) {
+      console.warn('Cannot approve: missing user id. user object:', user);
+      alert('Cannot save meal: user not authenticated');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      console.log('Approving meal with data:', text);
+      
+      // Aggregate all food items into one meal
+      const mealName = text.items.map((item) => item.name).join(', ');
+      const totalCarbs = text.items.reduce((sum, item) => sum + item.carbs, 0);
+      
+      // Calculate total insulin based on carbs and user's insulin ratio
+      const insulinRatio = user.insulinRatio || 1;
+      const totalInsulin = (totalCarbs / 15) * insulinRatio;
+      
+      console.log(`Saving meal: ${mealName}`);
+      console.log(`Total carbs: ${totalCarbs}g, Total insulin: ${totalInsulin} units`);
+      
+      // Save as a single meal row
+      await saveMeal(
+        user.id,
+        mealName,
+        totalCarbs,
+        totalInsulin,
+        undefined, // glycemicIndex
+        undefined, // currentGlucose
+        'unspecified' // timeOfDay
+      );
+
+      console.log('✓ Meal approved and saved to database');
+      alert('Meal saved successfully!');
+    } catch (error: any) {
+      console.error('✗ Error saving meal:', error);
+      alert(`Failed to save meal: ${error?.message ?? 'Unknown error'}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -87,11 +145,16 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
         {!isUser && isFoodData(text) && !editMode && (
           <div className="flex justify-end mt-2">
-            <button className="bg-green-500 text-white px-4 py-1 rounded-lg mr-2">
-              Approve
+            <button 
+              disabled={isSaving}
+              onClick={handleApprove}
+              className="bg-green-500 text-white px-4 py-1 rounded-lg mr-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-600"
+            >
+              {isSaving ? 'Saving...' : 'Approve'}
             </button>
             <button
-              className="bg-red-500 text-white px-4 py-1 rounded-lg"
+              disabled={isSaving}
+              className="bg-red-500 text-white px-4 py-1 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-600"
               onClick={handleEdit}
             >
               Edit
