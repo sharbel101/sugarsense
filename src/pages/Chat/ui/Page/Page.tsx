@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { ChatMessage, Message } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
 import Header from '@/components/Header/Header';
@@ -7,6 +8,9 @@ import Sidebar from '@/components/Sidebar/Sidebar';
 import { getBotResponse } from '../../botMessages';
 import { analyzeFoodImage } from '../utils/messageService';
 import { FoodData, renderFoodData } from '../utils/nutrition';
+import { clearUserFromStorage } from '@/features/user/userStorage';
+import { resetUser } from '@/features/user/userSlice';
+import { supabase } from '@/api/supabaseClient';
 
 const isFoodData = (value: Message['text']): value is FoodData => {
   return (
@@ -25,6 +29,7 @@ export const Page: React.FC = () => {
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -159,12 +164,47 @@ export const Page: React.FC = () => {
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         onLogout={() => {
-          navigate('/login', { replace: true });
+          console.log('=== PAGE onLogout FIRED ===');
+          
+          // Sign out from Supabase
+          console.log('1. Signing out from Supabase...');
+          supabase.auth.signOut().then(() => {
+            console.log('✓ Supabase sign-out successful');
+          }).catch(e => {
+            console.error('✗ Supabase sign-out error:', e);
+          });
+          
+          // Reset Redux user state
+          console.log('2. Dispatching resetUser...');
+          try {
+            dispatch(resetUser());
+            console.log('✓ Redux user state reset');
+          } catch (e) {
+            console.error('✗ Error resetting Redux:', e);
+          }
+          
+          // Clear local storage
+          console.log('3. Clearing user storage...');
+          try {
+            clearUserFromStorage();
+            console.log('✓ User storage cleared');
+          } catch (e) {
+            console.error('✗ Error clearing storage:', e);
+          }
+          
+          // Reset UI state
+          console.log('4. Resetting UI state...');
           setIsSidebarOpen(false);
           setIsMorningMode(false);
           setMessages([]);
           setInputText('');
           setPendingImage(null);
+          console.log('✓ UI state reset');
+          
+          // Navigate to login
+          console.log('5. Navigating to /login...');
+          navigate('/login', { replace: true });
+          console.log('=== END onLogout ===');
         }}
       />
 

@@ -1,0 +1,46 @@
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { RootState } from '@/app/store';
+
+export interface UserState {
+  id: string | null;
+  age: number | null;
+  insulinRatio: number | null;
+  fastInsulin: string | null;
+  basalInsulin: string | null;
+  isProfileComplete: boolean;
+}
+
+const initialState: UserState = {
+  id: null,
+  age: null,
+  insulinRatio: null,
+  fastInsulin: null,
+  basalInsulin: null,
+  isProfileComplete: false,
+};
+
+type UserProfilePayload = Omit<UserState, 'isProfileComplete'>;
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState,
+  reducers: {
+    setUser: (state, action: PayloadAction<UserProfilePayload>) => {
+      state.id = action.payload.id;
+      state.age = action.payload.age;
+      state.insulinRatio = action.payload.insulinRatio;
+      state.fastInsulin = action.payload.fastInsulin;
+      state.basalInsulin = action.payload.basalInsulin;
+      state.isProfileComplete = true;
+    },
+    resetUser: () => initialState,
+  },
+});
+
+export const { setUser, resetUser } = userSlice.actions;
+
+export const selectUser = (state: RootState) => state.user;
+export const selectIsUserProfileComplete = (state: RootState) =>
+  state.user.isProfileComplete;
+
+export default userSlice.reducer;

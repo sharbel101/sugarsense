@@ -1,5 +1,10 @@
 import { FC } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Sidebar.css';
+import { clearUserFromStorage } from '@/features/user/userStorage';
+import { supabase } from '@/api/supabaseClient';
+import { useDispatch } from 'react-redux';
+import { resetUser } from '@/features/user/userSlice';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -8,13 +13,57 @@ interface SidebarProps {
 }
 
 const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
   const handleLogoutClick = () => {
-    if (onLogout) {
-      onLogout();
-      return;
+    console.log('=== LOGOUT BUTTON CLICKED ===');
+    console.log('onLogout prop exists:', !!onLogout);
+    
+    // Sign out from Supabase auth
+    console.log('Attempting Supabase sign-out...');
+    try {
+      supabase.auth.signOut();
+      console.log('✓ Supabase sign-out successful');
+    } catch (e) {
+      console.error('✗ Error signing out from Supabase', e);
     }
 
-    window.location.href = '/login';
+    // Reset Redux user state
+    console.log('Dispatching resetUser...');
+    try {
+      dispatch(resetUser());
+      console.log('✓ Redux user reset');
+    } catch (e) {
+      console.error('✗ Error resetting Redux:', e);
+    }
+
+    // Let parent perform its cleanup (if provided)
+    console.log('Calling parent onLogout callback...');
+    if (onLogout) {
+      try {
+        onLogout();
+        console.log('✓ Parent onLogout callback executed');
+      } catch (e) {
+        console.error('✗ Error in parent logout', e);
+      }
+    } else {
+      console.warn('! No onLogout callback provided');
+    }
+
+    // Ensure persisted profile is removed
+    console.log('Clearing local storage...');
+    try {
+      clearUserFromStorage();
+      console.log('✓ Storage cleared');
+    } catch (e) {
+      console.error('✗ Error clearing storage', e);
+    }
+
+    // Use react-router navigation to go to the Login page
+    console.log('Navigating to /login...');
+    navigate('/login', { replace: true });
+    console.log('=== END LOGOUT ===');
   };
 
   return (
@@ -39,17 +88,15 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
             </div>
           </div>
 
-          {onLogout && (
-            <div className="mt-auto pt-4">
-              <button
-                type="button"
-                onClick={handleLogoutClick}
-                className="w-full rounded-xl bg-green-500 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:ring-offset-2"
-              >
-                Log out
-              </button>
-            </div>
-          )}
+          <div className="mt-auto pt-4">
+            <button
+              type="button"
+              onClick={handleLogoutClick}
+              className="w-full rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2"
+            >
+              Log out
+            </button>
+          </div>
         </div>
       </div>
 

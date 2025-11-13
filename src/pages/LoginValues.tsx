@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from 'react-redux';
 import Header from "@/components/Header/Header";
+import { updateUserRow } from '@/api/userApi';
+import { setUser, selectUser } from '@/features/user/userSlice';
+import { saveUserToStorage } from '@/features/user/userStorage';
 
 export const LoginValuesPage: React.FC = () => {
   const [age, setAge] = useState<number | "">("");
@@ -8,6 +12,8 @@ export const LoginValuesPage: React.FC = () => {
   const [fastInsulin, setFastInsulin] = useState("");
   const [basalInsulin, setBasalInsulin] = useState("");
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const storedUser = useSelector(selectUser);
 
   const fastInsulinOptions = [
     "Humalog (Lispro)",
@@ -109,7 +115,50 @@ export const LoginValuesPage: React.FC = () => {
         <div className="mx-auto flex w-full max-w-2xl justify-end px-4 py-4">
           <button
             type="button"
-            onClick={() => navigate("/chat")}
+            onClick={async () => {
+              try {
+                // determine user id
+                const userId = storedUser?.id;
+                if (!userId) {
+                  alert('Not authenticated — please login first');
+                  navigate('/login');
+                  return;
+                }
+
+                const payload: any = {
+                  age: age === '' ? null : age,
+                  insulin_ratio: insulinRatio === '' ? null : insulinRatio,
+                  fast_insulin: fastInsulin || null,
+                  basal_insulin: basalInsulin ? parseFloat(basalInsulin) : null,
+                };
+
+                await updateUserRow(userId, payload);
+
+                dispatch(
+                  setUser({
+                    id: userId,
+                    age: payload.age,
+                    insulinRatio: payload.insulin_ratio,
+                    fastInsulin: payload.fast_insulin,
+                    basalInsulin: payload.basal_insulin,
+                  })
+                );
+
+                saveUserToStorage({
+                  id: userId,
+                  age: payload.age,
+                  insulinRatio: payload.insulin_ratio,
+                  fastInsulin: payload.fast_insulin,
+                  basalInsulin: payload.basal_insulin,
+                  isProfileComplete: true,
+                } as any);
+
+                navigate('/chat');
+              } catch (err: any) {
+                console.error('Failed to save profile', err);
+                alert(err?.message ?? 'Failed to save profile');
+              }
+            }}
             className="rounded-xl bg-green-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-200 focus:ring-offset-2"
           >
             Continue
