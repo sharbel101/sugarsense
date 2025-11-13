@@ -163,7 +163,7 @@ export const Page: React.FC = () => {
       <Sidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
-        onLogout={() => {
+        onLogout={(): void => {
           console.log('=== PAGE onLogout FIRED ===');
           
           // Sign out from Supabase
