@@ -29,41 +29,39 @@ export const LoginPage: React.FC = () => {
         throw new Error('Password must be at least 6 characters');
       }
 
-      const auth = await signUp(email, signUpPassword);
-      const userId = (auth as any).user?.id;
+      // Attempt to create the auth user
+      await signUp(email, signUpPassword);
+
+      // Immediately sign the user in so they have an active session
+      const authAfter = await signIn(email, signUpPassword);
+      const userId = (authAfter as any).user?.id;
 
       if (!userId) {
-        throw new Error('No user id returned from signup');
+        throw new Error('No user id returned from signup/signin');
       }
 
-      // create users row with email and password
+      // create users row with email and password (profile)
       await createUserRow(userId, email, signUpPassword);
 
-      // dispatch into store
-      dispatch(
-        setUser({
-          id: userId,
-          age: null,
-          insulinRatio: null,
-          fastInsulin: null,
-          basalInsulin: null,
-        })
-      );
-
-      saveUserToStorage({
+      // dispatch into store and persist so user stays logged in across reloads
+      const userProfile = {
         id: userId,
         age: null,
         insulinRatio: null,
         fastInsulin: null,
         basalInsulin: null,
         isProfileComplete: false,
-      } as any);
+      } as any;
+
+      dispatch(setUser(userProfile));
+      saveUserToStorage(userProfile);
 
       setIsSignUpMode(false);
       setEmail('');
       setPassword('');
       setSignUpPassword('');
       setSignUpPasswordConfirm('');
+      // After signing up, require the user to complete profile details
       navigate('/login-values');
     } catch (error: any) {
       console.error('Sign-up error', error);
@@ -113,10 +111,12 @@ export const LoginPage: React.FC = () => {
         isProfileComplete: !!row,
       } as any);
 
-      navigate('/login-values');
+      navigate('/chat');
     } catch (error: any) {
       console.error('Login error', error);
       alert(error?.message ?? 'Login failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 

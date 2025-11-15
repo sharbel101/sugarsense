@@ -103,7 +103,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden"
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden sidebar-overlay"
           onClick={onClose}
         />
       )}

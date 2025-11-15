@@ -70,9 +70,11 @@
     width: 280px;
   }
 
-  /* Transparent overlay to avoid dimming */
-  .fixed.inset-0.z-30 {
-    z-index: 45;
-    background: transparent !important;
+  /* Ensure the mobile overlay does not sit above the sidebar (prevents blocking taps)
+     We target the specific overlay via `.sidebar-overlay` so we don't accidentally
+     affect other globally-styled fixed elements. The overlay still dims content. */
+  .sidebar-overlay {
+    z-index: 30 !important; /* must be lower than sidebar (z-40) */
+    background: rgba(0, 0, 0, 0.45) !important;
   }
 }

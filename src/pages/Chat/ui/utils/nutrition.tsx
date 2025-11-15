@@ -2,11 +2,13 @@
 export interface FoodItem {
   name: string;
   carbs: number;
+  cals?: number | null;
 }
 
 export interface FoodData {
   items: FoodItem[];
   totalCarbs: number;
+  totalCals?: number;
   isMorningMode?: boolean;
 }
 
@@ -23,9 +25,12 @@ export const formatApiResponse = (text: string): FoodData => {
   // Match exactly the carb token; disallow plain "g" without "carb".
   // Captures the numeric part in group 1.
   const CARB_REGEX = /(\d+(?:\.\d+)?)\s*(?:g|gram|grams)\s*(?:of\s*)?(?:carb(?:s)?|carbohydrate(?:s)?)\b/i;
+  // Match calories like "480 cals", "480 kcal", "480 calories" (group 1)
+  const CAL_REGEX = /(\d+(?:\.\d+)?)\s*(?:k?cal|cals?|calories?)\b/i;
 
   const items: FoodItem[] = [];
   let totalCarbs: number | null = null;
+  let totalCals: number | null = null;
 
   // Helper: parse a "values" string (the right side after the colon) for carbs only.
   const parseCarbsFromValues = (values: string): number | null => {
@@ -41,6 +46,19 @@ export const formatApiResponse = (text: string): FoodData => {
     // Round to, say, one decimal if you expect decimals; or keep raw.
     // Keeping raw numeric (no rounding) to preserve fidelity.
     return num;
+  };
+
+  // Helper: parse calories from a values string
+  const parseCalsFromValues = (values: string): number | null => {
+    if (!values) return null;
+
+    const match = values.match(CAL_REGEX);
+    if (!match) return null;
+
+    const num = parseFloat(match[1]);
+    if (!isFinite(num) || num < 0) return null;
+
+    return Math.round(num);
   };
 
   // Normalize line endings and skip empty lines.
@@ -62,17 +80,23 @@ export const formatApiResponse = (text: string): FoodData => {
 
     if (!name) return;
 
-    if (/^total$/i.test(name)) {
+    // Accept "Total", "Total Cals", "Total Calories", etc.
+    if (/^total(?:\s*(?:cals?|calories?))?$/i.test(name)) {
       // Parse strictly the carbs from the total line.
       const t = parseCarbsFromValues(values);
       if (t !== null) totalCarbs = t;
+
+      // Also try to parse total calories if present
+      const tc = parseCalsFromValues(values);
+      if (tc !== null) totalCals = tc;
       return;
     }
 
     // Regular item or sub-ingredient: parse carb value if present.
     const c = parseCarbsFromValues(values);
-    if (c !== null) {
-      items.push({ name, carbs: c });
+    const cal = parseCalsFromValues(values);
+    if (c !== null || cal !== null) {
+      items.push({ name, carbs: c ?? 0, cals: cal ?? null });
     }
   });
 
@@ -80,7 +104,11 @@ export const formatApiResponse = (text: string): FoodData => {
   const computedTotal = items.reduce((acc, it) => acc + it.carbs, 0);
   const finalTotal = totalCarbs !== null ? totalCarbs : computedTotal;
 
-  return { items, totalCarbs: finalTotal };
+  // Compute total calories if not provided by a Total line
+  const computedCals = items.reduce((acc, it) => acc + (it.cals || 0), 0);
+  const finalCals = totalCals !== null ? totalCals : (computedCals || undefined);
+
+  return { items, totalCarbs: finalTotal, totalCals: finalCals };
 };
 
 export const renderFoodData = (data: FoodData): JSX.Element[] => {
@@ -88,7 +116,7 @@ export const renderFoodData = (data: FoodData): JSX.Element[] => {
   data.items.forEach((item, i) => {
     elements.push(
       <div key={i}>
-        <strong>{item.name}</strong>: {item.carbs}g carbs
+        <strong>{item.name}</strong>: {item.carbs}g carbs{item.cals ? ` — ${item.cals} kcal` : ''}
       </div>
     );
   });
@@ -98,6 +126,15 @@ export const renderFoodData = (data: FoodData): JSX.Element[] => {
       <strong>Total</strong>: {data.totalCarbs}g carbs
     </div>
   );
+
+  // Show total calories below total carbs when available
+  if (typeof data.totalCals === 'number') {
+    elements.push(
+      <div key="total-cals">
+        <strong>Total Cals</strong>: {data.totalCals} kcal
+      </div>
+    );
+  }
 
   const bolusMultiplier = data.isMorningMode ? 5 : 4;
   const bolus = (data.totalCarbs / 15) * bolusMultiplier;
