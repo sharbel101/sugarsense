@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import { FoodData, FoodItem } from '../utils/nutrition';
 import { saveMeal } from '@/api/mealsApi';
 import { selectUser } from '@/features/user/userSlice';
+import { supabase } from '@/api/supabaseClient';
+import { getUserRow } from '@/api/userApi';
 
 export interface Message {
   id: number;
@@ -79,9 +81,24 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       return;
     }
 
-    if (!user?.id) {
+    // Allow approval when user is present in Redux or when a Supabase session exists.
+    let effectiveUserId = user?.id;
+    if (!effectiveUserId) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const sessionUser = data?.session?.user ?? null;
+        if (sessionUser && sessionUser.id) {
+          effectiveUserId = sessionUser.id;
+          console.log('Using Supabase session user id for approval:', effectiveUserId);
+        }
+      } catch (e) {
+        console.warn('Error checking supabase session during approval:', e);
+      }
+    }
+
+    if (!effectiveUserId) {
       console.warn('Cannot approve: missing user id. user object:', user);
-      alert('Cannot save meal: user not authenticated');
+      alert('Cannot save meal: please sign in to save meals');
       return;
     }
 
@@ -94,7 +111,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       const totalCarbs = text.items.reduce((sum, item) => sum + item.carbs, 0);
       
       // Calculate total insulin based on carbs and user's insulin ratio
-      const insulinRatio = user.insulinRatio || 1;
+      let insulinRatio = user?.insulinRatio || 1;
+      if ((!insulinRatio || insulinRatio === null) && effectiveUserId) {
+        try {
+          const row = await getUserRow(effectiveUserId);
+          insulinRatio = (row as any)?.insulin_ratio ?? insulinRatio ?? 1;
+        } catch (e) {
+          console.warn('Could not fetch user row for insulin ratio, using fallback', e);
+        }
+      }
       const totalInsulin = (totalCarbs / 15) * insulinRatio;
       
       console.log(`Saving meal: ${mealName}`);
@@ -102,7 +127,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       
       // Save as a single meal row
       await saveMeal(
-        user.id,
+        effectiveUserId,
         mealName,
         totalCarbs,
         totalInsulin,
