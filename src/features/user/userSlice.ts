@@ -19,7 +19,14 @@ const initialState: UserState = {
   isProfileComplete: false,
 };
 
-type UserProfilePayload = Omit<UserState, 'isProfileComplete'>;
+type UserProfilePayload = {
+  id: string | null;
+  age?: number | null;
+  insulinRatio?: number | null;
+  fastInsulin?: string | null;
+  basalInsulin?: string | null;
+  isProfileComplete?: boolean;
+};
 
 const userSlice = createSlice({
   name: 'user',
@@ -27,11 +34,11 @@ const userSlice = createSlice({
   reducers: {
     setUser: (state, action: PayloadAction<UserProfilePayload>) => {
       state.id = action.payload.id;
-      state.age = action.payload.age;
-      state.insulinRatio = action.payload.insulinRatio;
-      state.fastInsulin = action.payload.fastInsulin;
-      state.basalInsulin = action.payload.basalInsulin;
-      state.isProfileComplete = true;
+      state.age = action.payload.age ?? null;
+      state.insulinRatio = action.payload.insulinRatio ?? null;
+      state.fastInsulin = action.payload.fastInsulin ?? null;
+      state.basalInsulin = action.payload.basalInsulin ?? null;
+      state.isProfileComplete = action.payload.isProfileComplete ?? true;
     },
     resetUser: () => initialState,
   },

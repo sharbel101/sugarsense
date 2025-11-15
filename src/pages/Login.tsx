@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
+import { useAppSelector } from '@/app/hooks';
+import { selectUser } from '@/features/user/userSlice';
 import Header from "@/components/Header/Header";
 import { signIn, signUp, createUserRow, getUserRow, upsertUserRow } from '@/api/userApi';
 import { setUser } from '@/features/user/userSlice';
@@ -15,6 +17,19 @@ export const LoginPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const user = useAppSelector(selectUser);
+
+  useEffect(() => {
+    // If user already authenticated, redirect them to the appropriate page
+    if (user && user.id) {
+      if (user.isProfileComplete) {
+        navigate('/chat', { replace: true });
+      } else {
+        navigate('/login-values', { replace: true });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.isProfileComplete]);
 
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
