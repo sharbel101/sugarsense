@@ -174,7 +174,16 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
 
             {/* Settings */}
             <div className="sidebar-option">
-              <h3 className="text-lg font-semibold text-gray-800">Settings</h3>
+              <button
+                onClick={() => {
+                  navigate('/settings');
+                  onClose?.();
+                }}
+                className="w-full text-left hover:bg-gray-200 p-2 rounded-lg transition flex items-center justify-between"
+              >
+                <h3 className="text-lg font-semibold text-gray-800">Settings</h3>
+                <span className="text-2xl font-bold text-green-600">⚙</span>
+              </button>
             </div>
           </div>
 

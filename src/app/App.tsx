@@ -1,7 +1,7 @@
 import { FC, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
-import { ChatPage, LoginPage, LoginValuesPage, HistoryPage } from "@/pages";
+import { ChatPage, LoginPage, LoginValuesPage, HistoryPage, SettingsPage } from "@/pages";
 import { setUser } from '@/features/user/userSlice';
 import { loadUserFromStorage, saveUserToStorage, clearUserFromStorage } from '@/features/user/userStorage';
 import { supabase } from '@/api/supabaseClient';
@@ -99,6 +99,7 @@ const App: FC = () => {
       <Route path="/login-values" element={<LoginValuesPage />} />
       <Route path="/chat" element={<ChatPage />} />
       <Route path="/history/:date" element={<HistoryPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
