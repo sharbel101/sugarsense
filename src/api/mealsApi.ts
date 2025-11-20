@@ -19,6 +19,7 @@ export interface Meal {
   current_glucose?: number;
   time_of_day?: string;
   meal_timestamp?: string;
+  image_url?: string;
   created_at?: string;
 }
 
@@ -112,21 +113,28 @@ export const saveMeal = async (
 };
 
 /**
- * Fetch all meals for a user on a specific date
+ * Fetch all meals for a user on a specific date with full details
  */
-export const fetchMealsForDate = async (userId: string, date: string): Promise<Meal[]> => {
-  const { data: meals, error } = await supabase
+export const fetchMealsForDateWithDetails = async (userId: string, date: string): Promise<Meal[]> => {
+  // First get the daily log for this date
+  const { data: dailyLog, error: logError } = await supabase
+    .from('daily_logs')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('log_date', date)
+    .maybeSingle();
+
+  if (logError) throw logError;
+  if (!dailyLog) return [];
+
+  // Then fetch all meals for that daily log
+  const { data: meals, error: mealsError } = await supabase
     .from('meals')
     .select('*')
-    .in('daily_log_id', 
-      (await supabase
-        .from('daily_logs')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('log_date', date)).data?.map((log: any) => log.id) || []
-    );
+    .eq('daily_log_id', dailyLog.id)
+    .order('meal_timestamp', { ascending: true });
 
-  if (error) throw error;
+  if (mealsError) throw mealsError;
   return (meals || []) as Meal[];
 };
 
