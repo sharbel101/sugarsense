@@ -106,6 +106,9 @@ export const LoginPage: React.FC = () => {
         row = created as any;
       }
 
+      // Check if profile is complete (has insulin_ratio)
+      const isProfileComplete = !!(row as any)?.insulin_ratio;
+
       // dispatch into store (keep fields nullable)
       dispatch(
         setUser({
@@ -114,8 +117,11 @@ export const LoginPage: React.FC = () => {
           insulinRatio: (row as any)?.insulin_ratio ?? null,
           fastInsulin: (row as any)?.fast_insulin ?? null,
           basalInsulin: (row as any)?.basal_insulin ?? null,
+          isProfileComplete,
         })
       );
+
+      console.log('User signed in:', { userId, insulinRatio: (row as any)?.insulin_ratio, isProfileComplete });
 
       saveUserToStorage({
         id: userId,
@@ -123,7 +129,7 @@ export const LoginPage: React.FC = () => {
         insulinRatio: (row as any)?.insulin_ratio ?? null,
         fastInsulin: (row as any)?.fast_insulin ?? null,
         basalInsulin: (row as any)?.basal_insulin ?? null,
-        isProfileComplete: !!row,
+        isProfileComplete,
       } as any);
 
       navigate('/chat');

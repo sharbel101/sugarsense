@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { ChatMessage, Message } from '../components/ChatMessage';
 import { ChatInput } from '../components/ChatInput';
 import Header from '@/components/Header/Header';
@@ -9,7 +9,7 @@ import { getBotResponse } from '../../botMessages';
 import { analyzeFoodImage } from '../utils/messageService';
 import { FoodData, renderFoodData } from '../utils/nutrition';
 import { clearUserFromStorage } from '@/features/user/userStorage';
-import { resetUser } from '@/features/user/userSlice';
+import { resetUser, selectUser } from '@/features/user/userSlice';
 import { supabase } from '@/api/supabaseClient';
 
 const isFoodData = (value: Message['text']): value is FoodData => {
@@ -22,6 +22,7 @@ const isFoodData = (value: Message['text']): value is FoodData => {
 };
 
 export const Page: React.FC = () => {
+  const user = useSelector(selectUser);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isMorningMode, setIsMorningMode] = useState(false);
@@ -110,6 +111,13 @@ export const Page: React.FC = () => {
             msg.id === loadingMsgId ? { ...msg, text: formattedResponse } : msg
           )
         );
+
+        // Attach the image to the bot's food data response so it's available for upload when approving
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === loadingMsgId ? { ...msg, image: previewUrl } : msg
+          )
+        );
       } catch (error) {
         console.error('[Page.tsx] handleSendMessage: Error getting prediction:', error);
         setMessages((prev) =>
@@ -155,6 +163,11 @@ export const Page: React.FC = () => {
         msg.id === messageId ? { ...msg, text: newText } : msg
       )
     );
+  };
+
+  // Wrapper that passes user's insulinRatio to renderFoodData
+  const renderFoodDataWithUserRatio = (data: FoodData): JSX.Element[] => {
+    return renderFoodData(data, user?.insulinRatio ?? null);
   };
 
   return (
@@ -214,7 +227,7 @@ export const Page: React.FC = () => {
             key={message.id}
             message={message}
             onUpdateMessage={handleUpdateMessage}
-            renderFoodData={renderFoodData}
+            renderFoodData={renderFoodDataWithUserRatio}
           />
         ))}
         <div ref={messagesEndRef} />

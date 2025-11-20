@@ -1,4 +1,3 @@
-
 export interface FoodItem {
   name: string;
   carbs: number;
@@ -11,6 +10,17 @@ export interface FoodData {
   totalCals?: number;
   isMorningMode?: boolean;
 }
+
+/**
+ * Calculate insulin units needed based on carbs and insulin ratio.
+ * Formula: (carbs / 15) * insulinRatio
+ * @param carbs Total carbohydrate grams
+ * @param insulinRatio User's insulin-to-carb ratio (units per 15g carbs)
+ * @returns Insulin units needed
+ */
+export const calculateInsulin = (carbs: number, insulinRatio: number = 1): number => {
+  return (carbs / 15) * insulinRatio;
+};
 
 /**
  * Strictly parses carbohydrate amounts from a plain-text nutrition breakdown.
@@ -111,7 +121,7 @@ export const formatApiResponse = (text: string): FoodData => {
   return { items, totalCarbs: finalTotal, totalCals: finalCals };
 };
 
-export const renderFoodData = (data: FoodData): JSX.Element[] => {
+export const renderFoodData = (data: FoodData, insulinRatio?: number | null): JSX.Element[] => {
   const elements: JSX.Element[] = [];
   data.items.forEach((item, i) => {
     elements.push(
@@ -136,8 +146,9 @@ export const renderFoodData = (data: FoodData): JSX.Element[] => {
     );
   }
 
-  const bolusMultiplier = data.isMorningMode ? 5 : 4;
-  const bolus = (data.totalCarbs / 15) * bolusMultiplier;
+  // Use provided insulinRatio or fallback to 4 (default estimate)
+  const ratio = insulinRatio ?? 4;
+  const bolus = calculateInsulin(data.totalCarbs, ratio);
 
   elements.push(
     <div

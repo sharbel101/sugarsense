@@ -63,7 +63,8 @@ export const saveMeal = async (
   insulinTaken: number = 0,
   glycemicIndex?: number,
   currentGlucose?: number,
-  timeOfDay?: string
+  timeOfDay?: string,
+  imageUrl?: string | null
 ): Promise<Meal> => {
   console.log('saveMeal called with:', { userId, foodName, carbsGrams, insulinTaken });
 
@@ -71,7 +72,7 @@ export const saveMeal = async (
   const dailyLog = await getOrCreateDailyLog(userId);
   console.log('Daily log:', dailyLog);
 
-  // Insert the meal
+  // Insert the meal (include optional image_url)
   const { data: meal, error: mealError } = await supabase
     .from('meals')
     .insert([
@@ -83,6 +84,7 @@ export const saveMeal = async (
         glycemic_index: glycemicIndex ?? null,
         current_glucose: currentGlucose ?? null,
         time_of_day: timeOfDay ?? null,
+        image_url: imageUrl ?? null,
       },
     ])
     .select()

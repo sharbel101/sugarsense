@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { FoodData, FoodItem } from '../utils/nutrition';
+import { FoodData, FoodItem, calculateInsulin } from '../utils/nutrition';
 import { saveMeal } from '@/api/mealsApi';
 import { selectUser } from '@/features/user/userSlice';
 import { supabase } from '@/api/supabaseClient';
 import { getUserRow } from '@/api/userApi';
+import { uploadImageToStorage } from '@/api/storageApi';
 
 export interface Message {
   id: number;
@@ -111,21 +112,62 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       const totalCarbs = text.items.reduce((sum, item) => sum + item.carbs, 0);
       
       // Calculate total insulin based on carbs and user's insulin ratio
-      let insulinRatio = user?.insulinRatio || 1;
-      if ((!insulinRatio || insulinRatio === null) && effectiveUserId) {
+      let insulinRatio = user?.insulinRatio;
+      console.log('insulinRatio from Redux:', insulinRatio);
+      
+      if (!insulinRatio || insulinRatio === null) {
+        // Fallback: try to fetch from DB if Redux is empty (edge case)
         try {
           const row = await getUserRow(effectiveUserId);
-          insulinRatio = (row as any)?.insulin_ratio ?? insulinRatio ?? 1;
+          insulinRatio = (row as any)?.insulinRatio ?? (row as any)?.insulin_ratio ?? null;
+          console.log('Fallback: insulinRatio from DB:', insulinRatio);
         } catch (e) {
-          console.warn('Could not fetch user row for insulin ratio, using fallback', e);
+          console.warn('Could not fetch user row for insulin ratio', e);
         }
       }
-      const totalInsulin = (totalCarbs / 15) * insulinRatio;
+      
+      // Final fallback to 1 if still null
+      if (!insulinRatio || insulinRatio === null) {
+        console.warn('No insulinRatio found, using fallback of 1');
+        insulinRatio = 1;
+      }
+      
+      const totalInsulin = calculateInsulin(totalCarbs, insulinRatio);
       
       console.log(`Saving meal: ${mealName}`);
-      console.log(`Total carbs: ${totalCarbs}g, Total insulin: ${totalInsulin} units`);
+      console.log(`Total carbs: ${totalCarbs}g, insulinRatio: ${insulinRatio}, Total insulin: ${totalInsulin} units`);
       
-      // Save as a single meal row
+      // If there's an image attached to the message, upload it first
+      let imageUrl: string | undefined = undefined;
+      try {
+        console.log('Message image value:', image);
+        if (image) {
+          const isRemote = /^https?:\/\//i.test(image);
+          console.log('isRemote image?', isRemote);
+          if (!isRemote) {
+            // Convert data/blob URL to File by fetching it
+            console.log('Fetching image blob for upload...');
+            const resp = await fetch(image);
+            if (!resp.ok) throw new Error(`Failed to fetch image for upload: ${resp.status}`);
+            const blob = await resp.blob();
+            const filename = `meal_${Date.now()}.${(blob.type || 'image/png').split('/').pop()}`;
+            const file = new File([blob], filename, { type: blob.type || 'image/png' });
+            console.log('Uploading attached image for meal...');
+            imageUrl = await uploadImageToStorage(file);
+            console.log('Image uploaded, public URL:', imageUrl);
+          } else {
+            // Assume already public
+            console.log('Image is remote URL; skipping upload. Using as-is.');
+            imageUrl = image;
+          }
+        } else {
+          console.log('No image attached to message; skipping upload.');
+        }
+      } catch (imgErr) {
+        console.warn('Image upload failed, proceeding without image:', imgErr);
+      }
+
+      // Save as a single meal row (include imageUrl when available)
       await saveMeal(
         effectiveUserId,
         mealName,
@@ -133,7 +175,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         totalInsulin,
         undefined, // glycemicIndex
         undefined, // currentGlucose
-        'unspecified' // timeOfDay
+        'unspecified', // timeOfDay
+        imageUrl ?? null
       );
 
       console.log('✓ Meal approved and saved to database');
