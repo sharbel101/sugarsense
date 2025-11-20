@@ -7,6 +7,7 @@ export interface UserState {
   insulinRatio: number | null;
   fastInsulin: string | null;
   basalInsulin: string | null;
+  drId: string | null;
   isProfileComplete: boolean;
 }
 
@@ -16,6 +17,7 @@ const initialState: UserState = {
   insulinRatio: null,
   fastInsulin: null,
   basalInsulin: null,
+  drId: null,
   isProfileComplete: false,
 };
 
@@ -25,6 +27,7 @@ type UserProfilePayload = {
   insulinRatio?: number | null;
   fastInsulin?: string | null;
   basalInsulin?: string | null;
+  drId?: string | null;
   isProfileComplete?: boolean;
 };
 
@@ -38,6 +41,7 @@ const userSlice = createSlice({
       state.insulinRatio = action.payload.insulinRatio ?? null;
       state.fastInsulin = action.payload.fastInsulin ?? null;
       state.basalInsulin = action.payload.basalInsulin ?? null;
+      state.drId = action.payload.drId ?? null;
       state.isProfileComplete = action.payload.isProfileComplete ?? true;
     },
     resetUser: () => initialState,

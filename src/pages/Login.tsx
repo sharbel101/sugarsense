@@ -65,6 +65,7 @@ export const LoginPage: React.FC = () => {
         insulinRatio: null,
         fastInsulin: null,
         basalInsulin: null,
+        drId: null,
         isProfileComplete: false,
       } as any;
 
@@ -117,11 +118,12 @@ export const LoginPage: React.FC = () => {
           insulinRatio: (row as any)?.insulin_ratio ?? null,
           fastInsulin: (row as any)?.fast_insulin ?? null,
           basalInsulin: (row as any)?.basal_insulin ?? null,
+          drId: (row as any)?.dr_id ?? null,
           isProfileComplete,
         })
       );
 
-      console.log('User signed in:', { userId, insulinRatio: (row as any)?.insulin_ratio, isProfileComplete });
+      console.log('User signed in:', { userId, insulinRatio: (row as any)?.insulin_ratio, drId: (row as any)?.dr_id, isProfileComplete });
 
       saveUserToStorage({
         id: userId,
@@ -129,6 +131,7 @@ export const LoginPage: React.FC = () => {
         insulinRatio: (row as any)?.insulin_ratio ?? null,
         fastInsulin: (row as any)?.fast_insulin ?? null,
         basalInsulin: (row as any)?.basal_insulin ?? null,
+        drId: (row as any)?.dr_id ?? null,
         isProfileComplete,
       } as any);
 

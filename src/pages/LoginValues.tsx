@@ -11,6 +11,7 @@ export const LoginValuesPage: React.FC = () => {
   const [insulinRatio, setInsulinRatio] = useState<number | "">("");
   const [fastInsulin, setFastInsulin] = useState("");
   const [basalInsulin, setBasalInsulin] = useState("");
+  const [drId, setDrId] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const storedUser = useSelector(selectUser);
@@ -106,6 +107,18 @@ export const LoginValuesPage: React.FC = () => {
                   ))}
                 </select>
               </label>
+
+              {/* Doctor ID input */}
+              <label className="flex flex-col text-sm text-green-900">
+                Doctor ID (Optional)
+                <input
+                  type="text"
+                  value={drId}
+                  onChange={(e) => setDrId(e.target.value)}
+                  placeholder="Enter your doctor ID or code"
+                  className="mt-2 rounded-xl border border-green-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-200"
+                />
+              </label>
             </div>
           </section>
         </div>
@@ -130,6 +143,7 @@ export const LoginValuesPage: React.FC = () => {
                   insulin_ratio: insulinRatio === '' ? null : insulinRatio,
                   fast_insulin: fastInsulin || null,
                   basal_insulin: basalInsulin ? parseFloat(basalInsulin) : null,
+                  dr_id: drId || null,
                 };
 
                 await updateUserRow(userId, payload);
@@ -141,6 +155,7 @@ export const LoginValuesPage: React.FC = () => {
                     insulinRatio: payload.insulin_ratio,
                     fastInsulin: payload.fast_insulin,
                     basalInsulin: payload.basal_insulin,
+                    drId: payload.dr_id,
                   })
                 );
 
@@ -150,6 +165,7 @@ export const LoginValuesPage: React.FC = () => {
                   insulinRatio: payload.insulin_ratio,
                   fastInsulin: payload.fast_insulin,
                   basalInsulin: payload.basal_insulin,
+                  drId: payload.dr_id,
                   isProfileComplete: true,
                 } as any);
 

@@ -19,6 +19,7 @@ export const SettingsPage: React.FC = () => {
   const [age, setAge] = useState<number | ''>('');
   const [fastInsulin, setFastInsulin] = useState('');
   const [basalInsulin, setBasalInsulin] = useState('');
+  const [drId, setDrId] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -54,6 +55,7 @@ export const SettingsPage: React.FC = () => {
           setInsulinRatio(user.insulinRatio || '');
           setFastInsulin(user.fastInsulin || '');
           setBasalInsulin(user.basalInsulin || '');
+          setDrId(user.drId || '');
         }
       } catch (err) {
         console.error('Failed to load user info:', err);
@@ -78,6 +80,7 @@ export const SettingsPage: React.FC = () => {
         insulin_ratio: insulinRatio === '' ? null : insulinRatio,
         fast_insulin: fastInsulin || null,
         basal_insulin: basalInsulin || null,
+        dr_id: drId || null,
       };
 
       await updateUserRow(user.id, payload);
@@ -90,6 +93,7 @@ export const SettingsPage: React.FC = () => {
           insulinRatio: payload.insulin_ratio,
           fastInsulin: payload.fast_insulin,
           basalInsulin: payload.basal_insulin,
+          drId: payload.dr_id,
           isProfileComplete: true,
         })
       );
@@ -101,6 +105,7 @@ export const SettingsPage: React.FC = () => {
         insulinRatio: payload.insulin_ratio,
         fastInsulin: payload.fast_insulin,
         basalInsulin: payload.basal_insulin,
+        drId: payload.dr_id,
         isProfileComplete: true,
       } as any);
 
@@ -309,6 +314,17 @@ export const SettingsPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-800">Doctor ID (Optional)</label>
+                <input
+                  type="text"
+                  value={drId}
+                  onChange={(e) => setDrId(e.target.value)}
+                  placeholder="Enter your doctor ID or code"
+                  className="mt-2 w-full rounded-lg border border-green-200 bg-white px-4 py-2 text-gray-800 outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-200"
+                />
               </div>
 
               <button
