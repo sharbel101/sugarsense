@@ -111,12 +111,16 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
     <>
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 z-40 h-full w-64 transform bg-white transition-transform duration-300 ease-in-out sidebar-container ${
+        className={`fixed left-0 top-0 z-40 h-full w-64 transform bg-gradient-to-b from-green-50 to-white transition-transform duration-300 ease-in-out sidebar-container ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } md:relative md:translate-x-0`}
       >
-        <div className="flex h-full flex-col sidebar-inner bg-gray-50 p-4 shadow-lg overflow-y-auto">
-          <div className="mb-8 space-y-4">
+        <div className="flex h-full flex-col sidebar-inner bg-transparent p-6 shadow-xl overflow-y-auto">
+          {/* Header */}
+        
+
+          {/* Navigation Menu */}
+          <div className="space-y-2 flex-1">
             {/* New Chat */}
             <div className="sidebar-option">
               <button
@@ -124,9 +128,10 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
                   navigate('/chat');
                   onClose?.();
                 }}
-                className="w-full text-left hover:bg-gray-200 p-2 rounded-lg transition"
+                className="w-full text-left hover:bg-green-100 active:bg-green-200 px-4 py-3 rounded-lg transition flex items-center gap-3 group"
               >
-                <h3 className="text-lg font-semibold text-gray-800">New Chat</h3>
+                <span className="w-4 h-4 bg-green-600 rounded-full group-hover:bg-green-700"></span>
+                <h3 className="text-sm font-medium text-gray-800 group-hover:text-green-700">Predict Glucose</h3>
               </button>
             </div>
 
@@ -134,11 +139,14 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
             <div className="sidebar-option">
               <button
                 onClick={() => setHistoryExpanded(!historyExpanded)}
-                className="w-full text-left hover:bg-gray-200 p-2 rounded-lg transition flex items-center justify-between"
+                className="w-full text-left hover:bg-green-100 active:bg-green-200 px-4 py-3 rounded-lg transition flex items-center justify-between group"
               >
-                <h3 className="text-lg font-semibold text-gray-800">History</h3>
+                <div className="flex items-center gap-3">
+                  <span className="w-4 h-4 bg-green-600 rounded-full group-hover:bg-green-700"></span>
+                  <h3 className="text-sm font-medium text-gray-800 group-hover:text-green-700">History</h3>
+                </div>
                 <span 
-                  className={`text-2xl font-bold text-green-600 transition-transform duration-300 ${historyExpanded ? 'rotate-90' : ''}`}
+                  className={`text-lg text-green-600 transition-transform duration-300 ${historyExpanded ? 'rotate-90' : ''}`}
                 >
                   &gt;
                 </span>
@@ -146,25 +154,33 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
 
               {/* History list */}
               {historyExpanded && (
-                <div className="mt-2 space-y-1 pl-2 border-l-2 border-green-300">
-                  {loading && <p className="text-xs text-gray-500 py-2">Loading...</p>}
+                <div className="mt-2 space-y-1 pl-6 border-l border-gray-300 bg-gray-50 rounded-r-lg p-3">
+                  {loading && (
+                    <p className="text-xs text-gray-500 py-2 text-center">Loading...</p>
+                  )}
                   {!loading && dailyLogs.length === 0 && (
-                    <p className="text-xs text-gray-500 py-2">No history yet</p>
+                    <p className="text-xs text-gray-500 py-2 text-center">No history yet</p>
                   )}
                   {dailyLogs.map((log) => (
                     <button
                       key={log.id}
                       onClick={() => handleDateClick(log.log_date)}
-                      className="w-full text-left hover:bg-green-100 p-2 rounded-lg transition text-sm"
+                      className="w-full text-left hover:bg-green-200 active:bg-green-300 px-2 py-2 rounded transition text-xs group"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-gray-700 group-hover:text-green-800">
                           {formatFullDate(log.log_date)}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-600 mt-1">
-                        <div>{log.total_carbs.toFixed(1)}g carbs</div>
-                        <div>{log.total_insulin.toFixed(1)} units</div>
+                      <div className="text-xs text-gray-600 mt-1 space-y-0.5">
+                        <div className="flex justify-between">
+                          <span>Carbs:</span>
+                          <span className="font-medium">{log.total_carbs.toFixed(1)}g</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Insulin:</span>
+                          <span className="font-medium">{log.total_insulin.toFixed(1)}U</span>
+                        </div>
                       </div>
                     </button>
                   ))}
@@ -179,21 +195,22 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
                   navigate('/settings');
                   onClose?.();
                 }}
-                className="w-full text-left hover:bg-gray-200 p-2 rounded-lg transition flex items-center justify-between"
+                className="w-full text-left hover:bg-green-100 active:bg-green-200 px-4 py-3 rounded-lg transition flex items-center gap-3 group"
               >
-                <h3 className="text-lg font-semibold text-gray-800">Settings</h3>
-                <span className="text-2xl font-bold text-green-600">⚙</span>
+                <span className="w-4 h-4 bg-green-600 rounded-full group-hover:bg-green-700"></span>
+                <h3 className="text-sm font-medium text-gray-800 group-hover:text-green-700">Settings</h3>
               </button>
             </div>
           </div>
 
-          <div className="mt-auto pt-4">
+          {/* Logout Button */}
+          <div className="pt-4 border-t border-gray-200">
             <button
               type="button"
               onClick={handleLogoutClick}
-              className="w-full rounded-xl bg-red-500 px-4 py-3 text-sm font-semibold text-white shadow transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-200 focus:ring-offset-2"
+              className="w-full rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 px-4 py-2.5 text-xs font-semibold text-white shadow transition"
             >
-              Log out
+              Log Out
             </button>
           </div>
         </div>
@@ -202,7 +219,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden sidebar-overlay"
+          className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden sidebar-overlay backdrop-blur-sm"
           onClick={onClose}
         />
       )}
