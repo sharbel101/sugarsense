@@ -2,8 +2,14 @@ import { FC, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
 import { ChatPage, LoginPage, LoginValuesPage, HistoryPage, SettingsPage } from "@/pages";
+import { DoctorLoginPage } from '@/pages/DoctorLogin';
+import { DoctorDashboard } from '@/pages/DoctorDashboard';
+import { PatientDetailsPage } from '@/pages/PatientDetailsPage';
+import DoctorProtectedRoute from '@/routes/DoctorProtectedRoute';
 import { setUser } from '@/features/user/userSlice';
 import { loadUserFromStorage, saveUserToStorage, clearUserFromStorage } from '@/features/user/userStorage';
+import { loadDoctorFromStorage } from '@/features/doctor/doctorStorage';
+import { setDoctor } from '@/features/doctor/doctorSlice';
 import { supabase } from '@/api/supabaseClient';
 import { getUserRow } from '@/api/userApi';
 
@@ -14,7 +20,14 @@ const App: FC = () => {
     let mounted = true;
 
     const restoreFromStorage = async () => {
-      // First try restoring from our saved local profile
+      // Try restoring doctor from storage first
+      const savedDoctor = loadDoctorFromStorage();
+      if (savedDoctor && savedDoctor.id) {
+        dispatch(setDoctor(savedDoctor));
+        console.log('✓ Doctor restored to Redux store');
+      }
+
+      // Then try restoring user from storage
       const savedUser = loadUserFromStorage();
       console.log('Restored user from storage:', savedUser);
       if (savedUser && savedUser.id) {
@@ -100,6 +113,9 @@ const App: FC = () => {
       <Route path="/chat" element={<ChatPage />} />
       <Route path="/history/:date" element={<HistoryPage />} />
       <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/doctor-login" element={<DoctorLoginPage />} />
+      <Route path="/doctor-dashboard" element={<DoctorProtectedRoute><DoctorDashboard /></DoctorProtectedRoute>} />
+      <Route path="/patient/:patientId" element={<DoctorProtectedRoute><PatientDetailsPage /></DoctorProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
