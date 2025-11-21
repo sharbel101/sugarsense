@@ -19,7 +19,6 @@ interface Meal {
   glycemic_index?: number;
   insulin_taken?: number;
   current_glucose?: number;
-  time_of_day?: string;
   meal_timestamp?: string;
   image_url?: string;
 }
@@ -36,13 +35,17 @@ interface Patient {
 export const PatientDetailsPage: React.FC = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+
   const [patient, setPatient] = useState<Patient | null>(null);
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // -----------------------------------
+  // Fetch Patient + Logs
+  // -----------------------------------
   useEffect(() => {
-    const fetchData = async () => {
+    const load = async () => {
       if (!patientId) {
         setError('Patient ID not found');
         setIsLoading(false);
@@ -51,9 +54,9 @@ export const PatientDetailsPage: React.FC = () => {
 
       try {
         const patientData = await getPatientDetails(patientId);
-        setPatient(patientData);
-
         const logsData = await getPatientDailyLogs(patientId);
+
+        setPatient(patientData);
         setLogs(logsData || []);
       } catch (err: any) {
         setError(err.message || 'Failed to fetch patient data');
@@ -62,151 +65,330 @@ export const PatientDetailsPage: React.FC = () => {
       }
     };
 
-    fetchData();
+    load();
   }, [patientId]);
 
+  // -----------------------------------
+  // Loading State
+  // -----------------------------------
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <Header />
-        <main className="flex flex-1 items-center justify-center pt-24">
-          <div className="text-lg text-gray-600">Loading patient details...</div>
-        </main>
-      </div>
+      <PageWrapper>
+        <LoadingState />
+      </PageWrapper>
     );
   }
 
+  // -----------------------------------
+  // Error State
+  // -----------------------------------
   if (error || !patient) {
     return (
-      <div className="flex min-h-screen flex-col bg-gray-50">
-        <Header />
-        <main className="flex flex-1 items-center justify-center pt-24">
-          <div className="text-lg text-red-600">{error || 'Patient not found'}</div>
-        </main>
-      </div>
+      <PageWrapper>
+        <ErrorState message={error || 'Patient not found'} />
+      </PageWrapper>
     );
   }
 
+  // -----------------------------------
+  // Computed Totals
+  // -----------------------------------
+  const totalCarbs = logs.reduce((s, l) => s + l.total_carbs, 0);
+  const totalInsulin = logs.reduce((s, l) => s + l.total_insulin, 0);
+
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-white">
-      <Header />
-      <main className="flex-1 p-6 pt-24 md:p-8">
-        {/* Patient Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate('/doctor-dashboard')}
-            className="mb-6 inline-flex items-center rounded-lg bg-blue-100 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-200 transition"
-          >
-            ← Back to Patients
-          </button>
+    <PageWrapper>
+      <main className="flex-1 overflow-y-auto p-6 pt-24 md:p-8">
+        <div className="max-w-5xl mx-auto">
 
-          <div className="rounded-3xl border border-blue-100 bg-white/90 p-8 shadow-xl backdrop-blur-sm">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h1 className="text-3xl font-bold text-blue-900">{patient.email}</h1>
-                <p className="mt-2 text-gray-600">Patient ID: {patient.id.substring(0, 8)}...</p>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="rounded-lg bg-gradient-to-br from-blue-100 to-blue-50 p-4">
-                  <p className="text-sm text-gray-600">Age</p>
-                  <p className="text-2xl font-bold text-blue-700">{patient.age ?? 'N/A'}</p>
-                </div>
-                <div className="rounded-lg bg-gradient-to-br from-green-100 to-green-50 p-4">
-                  <p className="text-sm text-gray-600">Insulin Ratio</p>
-                  <p className="text-2xl font-bold text-green-700">{patient.insulin_ratio ?? 'N/A'}</p>
-                </div>
-                <div className="rounded-lg bg-gradient-to-br from-purple-100 to-purple-50 p-4">
-                  <p className="text-sm text-gray-600">Fast Insulin</p>
-                  <p className="text-2xl font-bold text-purple-700">{patient.fast_insulin ?? 'N/A'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          {/* Back Button */}
+          <BackButton onClick={() => navigate('/doctor-dashboard')} />
 
-        {/* Meal History */}
-        <div>
-          <h2 className="mb-6 text-2xl font-bold text-blue-900">Meal History</h2>
-          {logs.length > 0 ? (
-            <div className="space-y-6">
-              {logs.map((log) => (
-                <div
-                  key={log.id}
-                  className="rounded-2xl border border-blue-100 bg-white/90 p-6 shadow-lg backdrop-blur-sm hover:shadow-xl transition"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-blue-900">
-                        {new Date(log.log_date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </h3>
-                      <p className="text-sm text-gray-600">Total Carbs: {log.total_carbs}g</p>
-                    </div>
-                    <div className="rounded-lg bg-blue-100 px-4 py-2">
-                      <p className="text-sm text-gray-600">Insulin Used</p>
-                      <p className="text-xl font-bold text-blue-700">{log.total_insulin} units</p>
-                    </div>
-                  </div>
+          {/* Patient Card */}
+          <PatientHeaderCard patient={patient} />
 
-                  {log.meals && log.meals.length > 0 ? (
-                    <div className="space-y-3 mt-4 pt-4 border-t border-blue-100">
-                      {log.meals.map((meal) => (
-                        <div
-                          key={meal.id}
-                          className="rounded-lg bg-gradient-to-r from-blue-50 to-green-50 p-4"
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="font-semibold text-blue-900">{meal.food_name}</p>
-                              <div className="mt-2 flex flex-wrap gap-4 text-sm text-gray-600">
-                                <span>
-                                  🍞 <strong>{meal.carbs_grams}g</strong> carbs
-                                </span>
-                                {meal.time_of_day && (
-                                  <span>
-                                    🕐 <strong>{meal.time_of_day}</strong>
-                                  </span>
-                                )}
-                                {meal.current_glucose && (
-                                  <span>
-                                    📊 <strong>{meal.current_glucose}</strong> mg/dL
-                                  </span>
-                                )}
-                                {meal.insulin_taken && (
-                                  <span>
-                                    💊 <strong>{meal.insulin_taken}</strong> units
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            {meal.image_url && (
-                              <img
-                                src={meal.image_url}
-                                alt={meal.food_name}
-                                className="ml-4 h-16 w-16 rounded-lg object-cover"
-                              />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No meals recorded for this day</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl border border-blue-100 bg-white/90 p-8 text-center shadow-lg backdrop-blur-sm">
-              <p className="text-lg text-gray-500">No meal history available for this patient yet.</p>
-            </div>
-          )}
+          {/* Summary Stats */}
+          <SummaryStats
+            logsCount={logs.length}
+            totalCarbs={totalCarbs}
+            totalInsulin={totalInsulin}
+          />
+
+          {/* Meal History */}
+          <MealHistory logs={logs} />
         </div>
       </main>
-    </div>
+    </PageWrapper>
   );
 };
+
+//
+// ------------------------------------------------------
+// Sub-Components (Clean, Modular, Reusable)
+// ------------------------------------------------------
+//
+
+const PageWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-white">
+    <Header />
+    {children}
+  </div>
+);
+
+const LoadingState = () => (
+  <div className="flex flex-1 items-center justify-center pt-24">
+    <div className="text-center">
+      <svg
+        className="h-8 w-8 animate-spin text-blue-500 mx-auto mb-4"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+          className="opacity-25"
+        />
+        <path
+          fill="currentColor"
+          className="opacity-75"
+          d="M4 12a8 8 0 018-8V0C5.3 0 0 5.3 0 12h4z"
+        />
+      </svg>
+      <p className="text-blue-600 font-medium">Loading patient details...</p>
+    </div>
+  </div>
+);
+
+const ErrorState = ({ message }: { message: string }) => (
+  <main className="flex flex-1 items-center justify-center pt-24 px-6">
+    <div className="text-center">
+      <div className="text-5xl mb-4">⚠️</div>
+      <p className="text-lg font-semibold text-red-600 mb-4">{message}</p>
+      <button
+        onClick={() => window.history.back()}
+        className="inline-flex items-center rounded-lg bg-blue-500 px-6 py-3 text-white font-semibold hover:bg-blue-600 transition"
+      >
+        ← Back
+      </button>
+    </div>
+  </main>
+);
+
+const BackButton = ({ onClick }: { onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className="mb-6 inline-flex items-center rounded-lg bg-blue-100 px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-200 transition"
+  >
+    ← Back to Patients
+  </button>
+);
+
+const PatientHeaderCard = ({ patient }: { patient: any }) => (
+  <div className="mb-8">
+    <div className="rounded-3xl border border-blue-100 bg-white/90 p-8 shadow-lg backdrop-blur-sm">
+
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl md:text-4xl font-bold text-blue-900 mb-1 break-words">
+          {patient.email}
+        </h1>
+        <p className="text-sm text-gray-500">Patient ID: {patient.id.slice(0, 12)}...</p>
+      </div>
+
+      {/* Stat Grid */}
+      <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Age" color="blue" value={patient.age ?? 'N/A'} />
+        <StatCard label="Insulin Ratio" color="emerald" value={patient.insulin_ratio ?? 'N/A'} />
+        <StatCard label="Fast Insulin" color="purple" value={patient.fast_insulin ?? 'N/A'} />
+        <StatCard label="Basal Insulin" color="orange" value={patient.basal_insulin ?? 'N/A'} />
+      </div>
+    </div>
+  </div>
+);
+
+const StatCard = ({
+  label,
+  color,
+  value
+}: {
+  label: string;
+  color: string;
+  value: any;
+}) => (
+  <div className={`rounded-2xl bg-gradient-to-br from-${color}-100 to-${color}-50 p-5`}>
+    <p className={`text-[11px] font-semibold text-${color}-600 uppercase tracking-wider`}>
+      {label}
+    </p>
+    <p className={`mt-2 text-lg font-bold text-${color}-900 leading-snug break-words`}>
+      {value}
+    </p>
+  </div>
+);
+
+const SummaryStats = ({
+  logsCount,
+  totalCarbs,
+  totalInsulin
+}: {
+  logsCount: number;
+  totalCarbs: number;
+  totalInsulin: number;
+}) => (
+  <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+    <SummaryCard label="Total Logs" color="blue" value={logsCount} />
+    <SummaryCard label="Total Carbs" color="emerald" value={`${totalCarbs}g`} />
+    <SummaryCard label="Total Insulin" color="teal" value={`${Math.round(totalInsulin)} units`} />
+  </div>
+);
+
+const SummaryCard = ({
+  label,
+  value,
+  color
+}: {
+  label: string;
+  value: string | number;
+  color: string;
+}) => (
+  <div className="rounded-2xl border border-blue-100 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
+    <p className={`text-sm font-semibold uppercase tracking-wide text-${color}-600`}>{label}</p>
+    <p className={`mt-3 text-4xl font-bold text-${color}-900`}>{value}</p>
+  </div>
+);
+
+const MealHistory = ({ logs }: { logs: DailyLog[] }) => (
+  <div>
+    <h2 className="mb-6 text-3xl font-bold text-blue-900">Meal History</h2>
+
+    {logs.length === 0 ? (
+      <EmptyMealHistory />
+    ) : (
+      <div className="space-y-6">
+        {logs.map(log => (
+          <MealLogCard key={log.id} log={log} />
+        ))}
+      </div>
+    )}
+  </div>
+);
+
+const EmptyMealHistory = () => (
+  <div className="rounded-2xl border border-blue-100 bg-white/90 p-12 text-center shadow-lg backdrop-blur-sm">
+    <div className="mb-4 text-5xl">📊</div>
+    <p className="text-lg font-semibold text-blue-900 mb-2">No meal history available</p>
+    <p className="text-gray-600">This patient hasn't logged any meals yet.</p>
+  </div>
+);
+
+const MealLogCard = ({ log }: { log: DailyLog }) => (
+  <div className="rounded-2xl border border-blue-100 bg-white/90 shadow-lg hover:shadow-xl transition backdrop-blur-sm overflow-hidden">
+    <div className="p-6">
+
+      {/* Date */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-6 border-b border-blue-100">
+        <div>
+          <h3 className="text-2xl font-bold text-blue-900">
+            {new Date(log.log_date).toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </h3>
+          <p className="mt-1 text-sm text-gray-600">
+            {log.meals.length} meal{log.meals.length !== 1 ? 's' : ''} logged
+          </p>
+        </div>
+
+        <div className="flex gap-4">
+          <MealStatBox label="Carbs" color="emerald" value={`${log.total_carbs}g`} />
+          <MealStatBox label="Insulin" color="teal" value={`${Math.round(log.total_insulin)} units`} />
+        </div>
+      </div>
+
+      {/* Meals */}
+      {log.meals.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-4">No meals recorded for this day</p>
+      ) : (
+        <div className="space-y-4">
+          {log.meals.map(meal => (
+            <MealCard key={meal.id} meal={meal} />
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const MealStatBox = ({
+  label,
+  value,
+  color
+}: {
+  label: string;
+  value: string;
+  color: string;
+}) => (
+  <div className={`rounded-xl bg-${color}-100 px-6 py-3`}>
+    <p className={`text-xs font-bold text-${color}-600 uppercase tracking-wide`}>{label}</p>
+    <p className={`mt-1 text-2xl font-bold text-${color}-900`}>{value}</p>
+  </div>
+);
+
+const MealCard = ({ meal }: { meal: Meal }) => (
+  <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-emerald-50 p-5 hover:shadow-md transition">
+    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+
+      {/* Text */}
+      <div className="flex-1">
+        <h4 className="text-lg font-bold text-blue-900 mb-3">{meal.food_name}</h4>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <InfoBox label="Carbs" value={`${meal.carbs_grams}g`} color="emerald" />
+
+          {meal.insulin_taken && (
+            <InfoBox label="Insulin" value={`${Math.round(meal.insulin_taken)} units`} color="teal" />
+          )}
+
+          {meal.current_glucose && (
+            <InfoBox label="Glucose" value={`${meal.current_glucose} mg/dL`} color="blue" />
+          )}
+        </div>
+
+        {/* Extra Info */}
+        {meal.glycemic_index && (
+          <div className="mt-3 text-sm text-gray-600 space-y-1">
+            {meal.glycemic_index && <p>📊 GI: <strong>{meal.glycemic_index}</strong></p>}
+          </div>
+        )}
+      </div>
+
+      {/* Image */}
+      {meal.image_url && (
+        <img
+          src={meal.image_url}
+          alt={meal.food_name}
+          className="h-24 w-24 rounded-lg object-cover shadow-md"
+        />
+      )}
+    </div>
+  </div>
+);
+
+const InfoBox = ({
+  label,
+  value,
+  color
+}: {
+  label: string;
+  value: string;
+  color: string;
+}) => (
+  <div>
+    <p className="text-xs font-semibold text-gray-600">{label}</p>
+    <p className={`text-lg font-bold text-${color}-900`}>{value}</p>
+  </div>
+);

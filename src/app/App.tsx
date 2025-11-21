@@ -34,6 +34,7 @@ const App: FC = () => {
         dispatch(
           setUser({
             id: savedUser.id,
+            patientName: savedUser.patientName,
             age: savedUser.age,
             insulinRatio: savedUser.insulinRatio,
             fastInsulin: savedUser.fastInsulin,
@@ -53,6 +54,7 @@ const App: FC = () => {
           const row = await getUserRow(sessionUser.id);
           const payload = {
             id: sessionUser.id,
+            patientName: (row as any)?.patient_name ?? null,
             age: (row as any)?.age ?? null,
             insulinRatio: (row as any)?.insulin_ratio ?? null,
             fastInsulin: (row as any)?.fast_insulin ?? null,

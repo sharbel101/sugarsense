@@ -7,7 +7,6 @@ export interface SaveMealPayload {
   glycemic_index: number;
   insulin_taken: number;
   current_glucose: number;
-  time_of_day: string;
   meal_timestamp?: string;
 }
 
@@ -19,7 +18,6 @@ export interface MealRecord {
   glycemic_index: number;
   insulin_taken: number;
   current_glucose: number;
-  time_of_day: string;
   meal_timestamp: string;
 }
 
@@ -69,7 +67,6 @@ export const fetchMealsWithLogs = async (userId: string): Promise<MealWithLog[]>
         'glycemic_index',
         'insulin_taken',
         'current_glucose',
-        'time_of_day',
         'meal_timestamp',
         'daily_logs(id,log_date,total_carbs,total_insulin)',
       ].join(', ')

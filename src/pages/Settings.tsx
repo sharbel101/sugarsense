@@ -77,7 +77,7 @@ export const SettingsPage: React.FC = () => {
     try {
       const payload: any = {
         age: age === '' ? null : age,
-        insulin_ratio: insulinRatio === '' ? null : insulinRatio,
+        insulin_ratio: insulinRatio === '' ? null : Number(insulinRatio),
         fast_insulin: fastInsulin || null,
         basal_insulin: basalInsulin || null,
         dr_id: drId || null,

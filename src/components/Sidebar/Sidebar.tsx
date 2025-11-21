@@ -179,7 +179,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
                         </div>
                         <div className="flex justify-between">
                           <span>Insulin:</span>
-                          <span className="font-medium">{log.total_insulin.toFixed(1)}U</span>
+                          <span className="font-medium">{Math.round(log.total_insulin)}U</span>
                         </div>
                       </div>
                     </button>
@@ -208,7 +208,7 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
             <button
               type="button"
               onClick={handleLogoutClick}
-              className="w-full rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 px-4 py-2.5 text-xs font-semibold text-white shadow transition"
+              className="w-full rounded-lg bg-gray-200 hover:bg-gray-300 active:bg-gray-400 px-4 py-2.5 text-xs font-semibold text-gray-700 shadow transition"
             >
               Log Out
             </button>

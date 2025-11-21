@@ -50,7 +50,7 @@ export const getDoctorByAuthId = async (authUserId: string): Promise<DoctorProfi
 export const getPatientsByDrId = async (drId: string) => {
   const { data, error } = await supabase
     .from('users')
-    .select('id, email, age, insulin_ratio, fast_insulin')
+    .select('id, email, age, insulin_ratio, fast_insulin, patient_name')
     .eq('dr_id', drId);
 
   if (error) throw error;

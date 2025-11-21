@@ -17,7 +17,6 @@ export interface Meal {
   glycemic_index?: number;
   insulin_taken?: number;
   current_glucose?: number;
-  time_of_day?: string;
   meal_timestamp?: string;
   image_url?: string;
   created_at?: string;
@@ -64,7 +63,6 @@ export const saveMeal = async (
   insulinTaken: number = 0,
   glycemicIndex?: number,
   currentGlucose?: number,
-  timeOfDay?: string,
   imageUrl?: string | null
 ): Promise<Meal> => {
   console.log('saveMeal called with:', { userId, foodName, carbsGrams, insulinTaken });
@@ -84,7 +82,6 @@ export const saveMeal = async (
         insulin_taken: insulinTaken,
         glycemic_index: glycemicIndex ?? null,
         current_glucose: currentGlucose ?? null,
-        time_of_day: timeOfDay ?? null,
         image_url: imageUrl ?? null,
       },
     ])

@@ -7,6 +7,7 @@ import { setUser, selectUser } from '@/features/user/userSlice';
 import { saveUserToStorage } from '@/features/user/userStorage';
 
 export const LoginValuesPage: React.FC = () => {
+  const [patientName, setPatientName] = useState("");
   const [age, setAge] = useState<number | "">("");
   const [insulinRatio, setInsulinRatio] = useState<number | "">("");
   const [fastInsulin, setFastInsulin] = useState("");
@@ -49,6 +50,18 @@ export const LoginValuesPage: React.FC = () => {
             </header>
 
             <div className="grid gap-6">
+              {/* Patient Name input */}
+              <label className="flex flex-col text-sm text-green-900">
+                Full Name
+                <input
+                  type="text"
+                  value={patientName}
+                  onChange={(e) => setPatientName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="mt-2 rounded-xl border border-green-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-200"
+                />
+              </label>
+
               {/* Age input */}
               <label className="flex flex-col text-sm text-green-900">
                 Age
@@ -139,10 +152,11 @@ export const LoginValuesPage: React.FC = () => {
                 }
 
                 const payload: any = {
+                  patient_name: patientName || null,
                   age: age === '' ? null : age,
-                  insulin_ratio: insulinRatio === '' ? null : insulinRatio,
+                  insulin_ratio: insulinRatio === '' ? null : Number(insulinRatio),
                   fast_insulin: fastInsulin || null,
-                  basal_insulin: basalInsulin ? parseFloat(basalInsulin) : null,
+                  basal_insulin: basalInsulin ? Number(basalInsulin) : null,
                   dr_id: drId || null,
                 };
 
@@ -151,6 +165,7 @@ export const LoginValuesPage: React.FC = () => {
                 dispatch(
                   setUser({
                     id: userId,
+                    patientName: payload.patient_name,
                     age: payload.age,
                     insulinRatio: payload.insulin_ratio,
                     fastInsulin: payload.fast_insulin,
@@ -161,6 +176,7 @@ export const LoginValuesPage: React.FC = () => {
 
                 saveUserToStorage({
                   id: userId,
+                  patientName: payload.patient_name,
                   age: payload.age,
                   insulinRatio: payload.insulin_ratio,
                   fastInsulin: payload.fast_insulin,

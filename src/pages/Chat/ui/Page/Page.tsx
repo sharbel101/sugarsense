@@ -111,13 +111,6 @@ export const Page: React.FC = () => {
             msg.id === loadingMsgId ? { ...msg, text: formattedResponse } : msg
           )
         );
-
-        // Attach the image to the bot's food data response so it's available for upload when approving
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === loadingMsgId ? { ...msg, image: previewUrl } : msg
-          )
-        );
       } catch (error) {
         console.error('[Page.tsx] handleSendMessage: Error getting prediction:', error);
         setMessages((prev) =>

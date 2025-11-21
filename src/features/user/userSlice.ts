@@ -3,6 +3,7 @@ import type { RootState } from '@/app/store';
 
 export interface UserState {
   id: string | null;
+  patientName: string | null;
   age: number | null;
   insulinRatio: number | null;
   fastInsulin: string | null;
@@ -13,6 +14,7 @@ export interface UserState {
 
 const initialState: UserState = {
   id: null,
+  patientName: null,
   age: null,
   insulinRatio: null,
   fastInsulin: null,
@@ -23,6 +25,7 @@ const initialState: UserState = {
 
 type UserProfilePayload = {
   id: string | null;
+  patientName?: string | null;
   age?: number | null;
   insulinRatio?: number | null;
   fastInsulin?: string | null;
@@ -37,6 +40,7 @@ const userSlice = createSlice({
   reducers: {
     setUser: (state, action: PayloadAction<UserProfilePayload>) => {
       state.id = action.payload.id;
+      state.patientName = action.payload.patientName ?? null;
       state.age = action.payload.age ?? null;
       state.insulinRatio = action.payload.insulinRatio ?? null;
       state.fastInsulin = action.payload.fastInsulin ?? null;

@@ -175,7 +175,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         totalInsulin,
         undefined, // glycemicIndex
         undefined, // currentGlucose
-        'unspecified', // timeOfDay
         imageUrl ?? null
       );
 
