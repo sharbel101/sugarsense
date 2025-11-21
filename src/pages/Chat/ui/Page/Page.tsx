@@ -89,6 +89,7 @@ export const Page: React.FC = () => {
         id: messageIdBase,
         isUser: true,
         image: previewUrl,
+        imageFile: file,
         ...(trimmedText ? { text: trimmedText } : {}),
       };
 
@@ -101,14 +102,15 @@ export const Page: React.FC = () => {
 
       setMessages((prev) => [...prev, newUserMessage, loadingMsg]);
       setInputText('');
-      setPendingImage(null);
 
       try {
         const formattedResponse = await analyzeFoodImage(file, trimmedText, isMorningMode);
 
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === loadingMsgId ? { ...msg, text: formattedResponse } : msg
+            msg.id === loadingMsgId 
+              ? { ...msg, text: formattedResponse, image: previewUrl, imageFile: file } 
+              : msg
           )
         );
       } catch (error) {
@@ -120,6 +122,8 @@ export const Page: React.FC = () => {
               : msg
           )
         );
+      } finally {
+        setPendingImage(null);
       }
 
       return;

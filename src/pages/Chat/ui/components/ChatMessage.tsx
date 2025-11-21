@@ -12,6 +12,7 @@ export interface Message {
   text?: string | JSX.Element[] | FoodData;
   isUser: boolean;
   image?: string;
+  imageFile?: File;
 }
 
 interface ChatMessageProps {
@@ -36,7 +37,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   renderFoodData,
 }) => {
   const user = useSelector(selectUser);
-  const { text, isUser, image } = message;
+  const { text, isUser, image, imageFile } = message;
   const stringText = typeof text === 'string' ? text : undefined;
   const hasStringText = Boolean(stringText && stringText.trim().length > 0);
 
@@ -140,8 +141,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       // If there's an image attached to the message, upload it first
       let imageUrl: string | undefined = undefined;
       try {
+        console.log('Message imageFile value:', imageFile);
         console.log('Message image value:', image);
-        if (image) {
+        
+        // Prefer imageFile if available (File object), otherwise try image (URL)
+        if (imageFile) {
+          console.log('Using imageFile from message...');
+          imageUrl = await uploadImageToStorage(imageFile);
+          console.log('Image uploaded, public URL:', imageUrl);
+        } else if (image) {
           const isRemote = /^https?:\/\//i.test(image);
           console.log('isRemote image?', isRemote);
           if (!isRemote) {
