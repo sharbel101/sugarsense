@@ -12,20 +12,13 @@ import { clearUserFromStorage } from '@/features/user/userStorage';
 import { resetUser, selectUser } from '@/features/user/userSlice';
 import { supabase } from '@/api/supabaseClient';
 
-const isFoodData = (value: Message['text']): value is FoodData => {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'items' in value &&
-    'totalCarbs' in value
-  );
-};
+
 
 export const Page: React.FC = () => {
   const user = useSelector(selectUser);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isMorningMode, setIsMorningMode] = useState(false);
+  
   const [inputText, setInputText] = useState('');
   const [pendingImage, setPendingImage] = useState<{ file: File; previewUrl: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -57,27 +50,7 @@ export const Page: React.FC = () => {
     });
   };
 
-  const applyMorningModeToLatestFoodMessage = (mode: boolean) => {
-    setMessages((prev) => {
-      const next = [...prev];
-      for (let i = next.length - 1; i >= 0; i -= 1) {
-        const msg = next[i];
-        if (isFoodData(msg.text)) {
-          next[i] = { ...msg, text: { ...msg.text, isMorningMode: mode } };
-          break;
-        }
-      }
-      return next;
-    });
-  };
-
-  const handleToggleMorningMode = () => {
-    setIsMorningMode((prev) => {
-      const next = !prev;
-      applyMorningModeToLatestFoodMessage(next);
-      return next;
-    });
-  };
+  
 
   const handleSendMessage = async () => {
     const trimmedText = inputText.trim();
@@ -102,9 +75,11 @@ export const Page: React.FC = () => {
 
       setMessages((prev) => [...prev, newUserMessage, loadingMsg]);
       setInputText('');
+      // Hide the preview in the input immediately (message retains the previewUrl)
+      setPendingImage(null);
 
       try {
-        const formattedResponse = await analyzeFoodImage(file, trimmedText, isMorningMode);
+        const formattedResponse = await analyzeFoodImage(file, trimmedText, false);
 
         setMessages((prev) =>
           prev.map((msg) =>
@@ -122,8 +97,6 @@ export const Page: React.FC = () => {
               : msg
           )
         );
-      } finally {
-        setPendingImage(null);
       }
 
       return;
@@ -205,7 +178,6 @@ export const Page: React.FC = () => {
           // Reset UI state
           console.log('4. Resetting UI state...');
           setIsSidebarOpen(false);
-          setIsMorningMode(false);
           setMessages([]);
           setInputText('');
           setPendingImage(null);
@@ -243,8 +215,6 @@ export const Page: React.FC = () => {
             onRemoveImage={handleRemovePendingImage}
             hasPendingImage={Boolean(pendingImage)}
             imagePreviewUrl={pendingImage?.previewUrl}
-            onToggleMorningMode={handleToggleMorningMode}
-            isMorningMode={isMorningMode}
           />
         </div>
       </footer>

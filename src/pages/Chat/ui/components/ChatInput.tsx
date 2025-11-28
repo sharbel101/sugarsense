@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+﻿import React, { useRef } from 'react';
 
 interface ChatInputProps {
   value: string;
@@ -8,8 +8,6 @@ interface ChatInputProps {
   onRemoveImage: () => void;
   hasPendingImage: boolean;
   imagePreviewUrl?: string;
-  onToggleMorningMode: () => void;
-  isMorningMode: boolean;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -20,8 +18,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onRemoveImage,
   hasPendingImage,
   imagePreviewUrl,
-  onToggleMorningMode,
-  isMorningMode,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -56,9 +52,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
-  const morningButtonClasses = isMorningMode
-    ? 'border-green-400 bg-green-50 text-green-600 shadow-sm'
-    : 'border-yellow-200 bg-yellow-100/95 text-yellow-700 shadow-inner';
 
   return (
     <form
@@ -91,31 +84,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={onToggleMorningMode}
-          aria-pressed={isMorningMode}
-          aria-label="Toggle morning mode"
-          className={`flex h-8 items-center gap-2 self-start rounded-full border px-3 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-300 ${morningButtonClasses}`}
-          style={{ WebkitTapHighlightColor: 'transparent' }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            className="h-3.5 w-3.5"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 4.75V3m0 18v-1.75M20.25 12H22m-20 0h1.75m13.62-6.62l1.24-1.24M4.39 19.61l1.24-1.24m0-10.74L4.39 6.39m13.62 13.22l1.24 1.24M16.5 12a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z"
-            />
-          </svg>
-          Morning
-        </button>
+        <div className="flex flex-col gap-2">
 
         <div className="flex items-center gap-3">
           <button
