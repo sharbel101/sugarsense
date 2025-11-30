@@ -7,6 +7,19 @@ import { supabase } from '@/api/supabaseClient';
 import { getUserRow } from '@/api/userApi';
 import { uploadImageToStorage } from '@/api/storageApi';
 
+// Helper to add a timeout to promises
+const withTimeout = async <T,>(p: Promise<T>, ms: number, message?: string): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(message || `Operation timed out after ${ms}ms`)), ms);
+  });
+  try {
+    return await Promise.race([p, timeoutPromise]) as T;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 export interface Message {
   id: number;
   text?: string | JSX.Element[] | FoodData;
@@ -147,7 +160,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         // Prefer imageFile if available (File object), otherwise try image (URL)
         if (imageFile) {
           console.log('Using imageFile from message...');
-          imageUrl = await uploadImageToStorage(imageFile);
+          // limit upload time to 20s
+          imageUrl = await withTimeout(uploadImageToStorage(imageFile), 20000, 'Image upload timed out');
           console.log('Image uploaded, public URL:', imageUrl);
         } else if (image) {
           const isRemote = /^https?:\/\//i.test(image);
@@ -161,7 +175,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             const filename = `meal_${Date.now()}.${(blob.type || 'image/png').split('/').pop()}`;
             const file = new File([blob], filename, { type: blob.type || 'image/png' });
             console.log('Uploading attached image for meal...');
-            imageUrl = await uploadImageToStorage(file);
+            imageUrl = await withTimeout(uploadImageToStorage(file), 20000, 'Image upload timed out');
             console.log('Image uploaded, public URL:', imageUrl);
           } else {
             // Assume already public
@@ -176,18 +190,45 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       }
 
       // Save as a single meal row (include imageUrl when available)
-      await saveMeal(
-        effectiveUserId,
-        mealName,
-        totalCarbs,
-        totalInsulin,
-        undefined, // glycemicIndex
-        undefined, // currentGlucose
-        imageUrl ?? null
-      );
-
-      console.log('✓ Meal approved and saved to database');
-      alert('Meal saved successfully!');
+        try {
+          await withTimeout(
+            saveMeal(
+              effectiveUserId,
+              mealName,
+              totalCarbs,
+              totalInsulin,
+              undefined, // glycemicIndex
+              undefined, // currentGlucose
+              imageUrl ?? null
+            ),
+            15000,
+            'Saving meal timed out'
+          );
+          console.log('✓ Meal approved and saved to database');
+          alert('Meal saved successfully!');
+        } catch (saveErr: any) {
+          console.error('Failed to save meal (with timeout):', saveErr);
+          // Attempt a retry without image if the first save failed and an image was present
+          if (imageUrl) {
+            try {
+              console.log('Retrying save without image...');
+              await withTimeout(
+                saveMeal(effectiveUserId, mealName, totalCarbs, totalInsulin),
+                10000,
+                'Retry saving meal timed out'
+              );
+              console.log('✓ Meal saved on retry without image');
+              alert('Meal saved (without image) after retry');
+            } catch (retryErr: any) {
+              console.error('Retry also failed:', retryErr);
+              alert(`Failed to save meal: ${retryErr?.message || retryErr}`);
+              throw retryErr;
+            }
+          } else {
+            alert(`Failed to save meal: ${saveErr?.message || saveErr}`);
+            throw saveErr;
+          }
+        }
     } catch (error: any) {
       console.error('✗ Error saving meal:', error);
       alert(`Failed to save meal: ${error?.message ?? 'Unknown error'}`);
