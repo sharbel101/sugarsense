@@ -7,18 +7,32 @@ import Header from '@/components/Header/Header';
 
 export const PredictionPage: React.FC = () => {
   const navigate = useNavigate();
-  const [currentBG, setCurrentBG] = useState<number>(0);
-  const [carbs, setCarbs] = useState<number>(0);
-  const [bolus, setBolus] = useState<number>(0);
-  const [cir, setCir] = useState<number>(0);
-  const [gi, setGi] = useState<number>(0);
+  // Use string state to allow empty inputs without forcing 0
+  const [currentBG, setCurrentBG] = useState<string>("");
+  const [carbs, setCarbs] = useState<string>("");
+  const [bolus, setBolus] = useState<string>("");
+  const [cir, setCir] = useState<string>("");
+  const [gi, setGi] = useState<string>("");
   const [pred, setPred] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePredict = () => {
     try {
       setError(null);
-      const res = predictAbsolute({ currentBG, carbs, bolus, cir, gi });
+      // Parse numbers, defaulting to 0 if empty or invalid
+      const parsedCurrentBG = Number(currentBG) || 0;
+      const parsedCarbs = Number(carbs) || 0;
+      const parsedBolus = Number(bolus) || 0;
+      const parsedCir = Number(cir) || 0;
+      const parsedGi = Number(gi) || 0;
+
+      const res = predictAbsolute({
+        currentBG: parsedCurrentBG,
+        carbs: parsedCarbs,
+        bolus: parsedBolus,
+        cir: parsedCir,
+        gi: parsedGi,
+      });
       setPred(res);
     } catch (e: any) {
       setError(e?.message || 'Failed to generate prediction');
@@ -57,7 +71,7 @@ export const PredictionPage: React.FC = () => {
                   <input
                     type="number"
                     value={currentBG}
-                    onChange={(e) => setCurrentBG(Number(e.target.value))}
+                    onChange={(e) => setCurrentBG(e.target.value)}
                     className="input-field"
                     placeholder="0"
                   />
@@ -69,7 +83,7 @@ export const PredictionPage: React.FC = () => {
                   <input
                     type="number"
                     value={carbs}
-                    onChange={(e) => setCarbs(Number(e.target.value))}
+                    onChange={(e) => setCarbs(e.target.value)}
                     className="input-field"
                     placeholder="0"
                   />
@@ -81,7 +95,7 @@ export const PredictionPage: React.FC = () => {
                   <input
                     type="number"
                     value={gi}
-                    onChange={(e) => setGi(Number(e.target.value))}
+                    onChange={(e) => setGi(e.target.value)}
                     className="input-field"
                     placeholder="0"
                   />
@@ -93,7 +107,7 @@ export const PredictionPage: React.FC = () => {
                   <input
                     type="number"
                     value={bolus}
-                    onChange={(e) => setBolus(Number(e.target.value))}
+                    onChange={(e) => setBolus(e.target.value)}
                     className="input-field"
                     placeholder="0"
                   />
@@ -106,7 +120,7 @@ export const PredictionPage: React.FC = () => {
                     type="number"
                     step="0.1"
                     value={cir}
-                    onChange={(e) => setCir(Number(e.target.value))}
+                    onChange={(e) => setCir(e.target.value)}
                     className="input-field"
                     placeholder="0"
                   />
