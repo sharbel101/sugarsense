@@ -6,3 +6,4 @@ export { SettingsPage } from "./Settings";
 export { DoctorLoginPage } from "./DoctorLogin";
 export { DoctorDashboard } from "./DoctorDashboard";
 export { PatientDetailsPage } from "./PatientDetailsPage";
+export { PredictionPage } from "./prediction/graph";

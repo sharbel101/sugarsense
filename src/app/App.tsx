@@ -1,7 +1,7 @@
 import { FC, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch } from 'react-redux';
-import { ChatPage, LoginPage, LoginValuesPage, HistoryPage, SettingsPage } from "@/pages";
+import { ChatPage, LoginPage, LoginValuesPage, HistoryPage, SettingsPage, PredictionPage } from "@/pages";
 import { DoctorLoginPage } from '@/pages/DoctorLogin';
 import { DoctorDashboard } from '@/pages/DoctorDashboard';
 import { PatientDetailsPage } from '@/pages/PatientDetailsPage';
@@ -113,6 +113,7 @@ const App: FC = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/login-values" element={<LoginValuesPage />} />
       <Route path="/chat" element={<ChatPage />} />
+      <Route path="/prediction" element={<PredictionPage />} />
       <Route path="/history/:date" element={<HistoryPage />} />
       <Route path="/settings" element={<SettingsPage />} />
       <Route path="/doctor-login" element={<DoctorLoginPage />} />

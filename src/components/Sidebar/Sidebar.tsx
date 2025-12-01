@@ -121,11 +121,11 @@ const Sidebar: FC<SidebarProps> = ({ isOpen = false, onClose, onLogout }) => {
 
           {/* Navigation Menu */}
           <div className="space-y-2 flex-1">
-            {/* New Chat */}
+            {/* predict glucose */}
             <div className="sidebar-option">
               <button
                 onClick={() => {
-                  navigate('/chat');
+                  navigate('/prediction');
                   onClose?.();
                 }}
                 className="w-full text-left hover:bg-green-100 active:bg-green-200 px-4 py-3 rounded-lg transition flex items-center gap-3 group"
