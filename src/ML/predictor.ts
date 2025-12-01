@@ -6,6 +6,7 @@ export interface PredictionInput {
   carbs: number;
   bolus: number;
   cir: number;
+  gi?: number;
 }
 
 function validateWeights(W: any, b: any) {
@@ -41,9 +42,10 @@ const modelB: number[] = raw.b;
 export function predictDelta(
   carbs: number,
   bolus: number,
-  cir: number
+  cir: number,
+  gi: number = 55
 ): number[] {
-  const X = buildFeatures(carbs, bolus, cir);
+  const X = buildFeatures(carbs, bolus, cir, gi);
 
   return modelB.map((bias, i) => {
     let sum = bias;
@@ -55,6 +57,6 @@ export function predictDelta(
 }
 
 export function predictAbsolute(input: PredictionInput): number[] {
-  const deltas = predictDelta(input.carbs, input.bolus, input.cir);
+  const deltas = predictDelta(input.carbs, input.bolus, input.cir, input.gi ?? 55);
   return deltas.map(delta => input.currentBG + delta);
 }

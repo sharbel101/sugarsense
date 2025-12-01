@@ -11,13 +11,14 @@ export const PredictionPage: React.FC = () => {
   const [carbs, setCarbs] = useState<number>(83);
   const [bolus, setBolus] = useState<number>(10);
   const [cir, setCir] = useState<number>(4.2);
+  const [gi, setGi] = useState<number>(55);
   const [pred, setPred] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handlePredict = () => {
     try {
       setError(null);
-      const res = predictAbsolute({ currentBG, carbs, bolus, cir });
+      const res = predictAbsolute({ currentBG, carbs, bolus, cir, gi });
       setPred(res);
     } catch (e: any) {
       setError(e?.message || 'Failed to generate prediction');
@@ -71,6 +72,18 @@ export const PredictionPage: React.FC = () => {
                     onChange={(e) => setCarbs(Number(e.target.value))}
                     className="input-field"
                     placeholder="83"
+                  />
+                </div>
+              </div>
+              <div className="input-group">
+                <label className="input-label">Glycemic Index (0-150)</label>
+                <div className="input-wrapper">
+                  <input
+                    type="number"
+                    value={gi}
+                    onChange={(e) => setGi(Number(e.target.value))}
+                    className="input-field"
+                    placeholder="55"
                   />
                 </div>
               </div>
