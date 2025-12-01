@@ -7,11 +7,11 @@ import Header from '@/components/Header/Header';
 
 export const PredictionPage: React.FC = () => {
   const navigate = useNavigate();
-  const [currentBG, setCurrentBG] = useState<number>(98);
-  const [carbs, setCarbs] = useState<number>(83);
-  const [bolus, setBolus] = useState<number>(10);
-  const [cir, setCir] = useState<number>(4.2);
-  const [gi, setGi] = useState<number>(55);
+  const [currentBG, setCurrentBG] = useState<number>(0);
+  const [carbs, setCarbs] = useState<number>(0);
+  const [bolus, setBolus] = useState<number>(0);
+  const [cir, setCir] = useState<number>(0);
+  const [gi, setGi] = useState<number>(0);
   const [pred, setPred] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
