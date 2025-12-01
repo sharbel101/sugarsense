@@ -75,6 +75,7 @@ export const formatApiResponse = (text: string): FoodData => {
 
   // Normalize line endings and skip empty lines.
   const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  console.log('[nutrition] Parsing lines:', lines);
 
   lines.forEach((line) => {
     // Identify sub-ingredient vs item/total
@@ -104,14 +105,16 @@ export const formatApiResponse = (text: string): FoodData => {
       return;
     }
 
-    // Parse Meal GI line: exact format "Meal GI: <integer>"
-    if (/^meal\s*gi$/i.test(name)) {
-      const giMatch = values.match(/^(\d{1,3})\b/);
+    // Parse GI line: accept "Meal GI", "Total GI", or plain "GI"
+    if (/^(?:meal\s*gi|total\s*gi|gi)$/i.test(name)) {
+      // Extract first integer on the line
+      const giMatch = values.match(/(\d{1,3})/);
       if (giMatch) {
         const giVal = parseInt(giMatch[1], 10);
         if (isFinite(giVal)) {
           // Clamp to 0-100 to match prompt contract
           mealGi = Math.max(0, Math.min(100, giVal));
+          console.log('[nutrition] Parsed Meal GI:', mealGi);
         }
       }
       return;
@@ -133,7 +136,9 @@ export const formatApiResponse = (text: string): FoodData => {
   const computedCals = items.reduce((acc, it) => acc + (it.cals || 0), 0);
   const finalCals = totalCals !== null ? totalCals : (computedCals || undefined);
 
-  return { items, totalCarbs: finalTotal, totalCals: finalCals, mealGi: mealGi ?? undefined };
+  const result = { items, totalCarbs: finalTotal, totalCals: finalCals, mealGi: mealGi ?? undefined };
+  console.log('[nutrition] Final parsed result:', result);
+  return result;
 };
 
 export const renderFoodData = (data: FoodData, insulinRatio?: number | null): JSX.Element[] => {
