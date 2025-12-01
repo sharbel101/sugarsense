@@ -34,8 +34,7 @@ ESTIMATION (silent)
 - If none available, assume the most common real-world size for that food.
 - Convert volume → weight → carbs using typical references.
 - Starches carry most carbs; sauces may add carbs; proteins/cheese/veg minimal.
-- Round carbs to nearest 1 g.
-- When unsure, slightly UNDERESTIMATE.
+- Round carbs to nearest 1 g..
 
 PACKAGED ITEMS
 - If the image shows a labeled or wrapped product (e.g., chocolate bar, snack bag, candy), use the carbs for the ENTIRE item shown — not per serving.

@@ -262,19 +262,6 @@ export const LoginPage: React.FC = () => {
 
           {/* Bottom Actions Container */}
           <div className="mt-6 space-y-4">
-            
-            {/* Guest Mode - Subtle */}
-            {!isSignUpMode && (
-              <div className="text-center">
-                <button
-                  type="button"
-                  className="text-xs font-medium text-emerald-400 transition hover:text-emerald-600 active:scale-95"
-                  onClick={() => navigate("/login-values")}
-                >
-                  Skip for now & continue as guest
-                </button>
-              </div>
-            )}
 
             {/* Doctor Login - Distinct Blue Card */}
             <button

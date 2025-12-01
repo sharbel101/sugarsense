@@ -8,6 +8,7 @@ export interface FoodData {
   items: FoodItem[];
   totalCarbs: number;
   totalCals?: number;
+  mealGi?: number;
   isMorningMode?: boolean;
 }
 
@@ -41,6 +42,7 @@ export const formatApiResponse = (text: string): FoodData => {
   const items: FoodItem[] = [];
   let totalCarbs: number | null = null;
   let totalCals: number | null = null;
+  let mealGi: number | null = null;
 
   // Helper: parse a "values" string (the right side after the colon) for carbs only.
   const parseCarbsFromValues = (values: string): number | null => {
@@ -102,6 +104,19 @@ export const formatApiResponse = (text: string): FoodData => {
       return;
     }
 
+    // Parse Meal GI line: exact format "Meal GI: <integer>"
+    if (/^meal\s*gi$/i.test(name)) {
+      const giMatch = values.match(/^(\d{1,3})\b/);
+      if (giMatch) {
+        const giVal = parseInt(giMatch[1], 10);
+        if (isFinite(giVal)) {
+          // Clamp to 0-100 to match prompt contract
+          mealGi = Math.max(0, Math.min(100, giVal));
+        }
+      }
+      return;
+    }
+
     // Regular item or sub-ingredient: parse carb value if present.
     const c = parseCarbsFromValues(values);
     const cal = parseCalsFromValues(values);
@@ -118,7 +133,7 @@ export const formatApiResponse = (text: string): FoodData => {
   const computedCals = items.reduce((acc, it) => acc + (it.cals || 0), 0);
   const finalCals = totalCals !== null ? totalCals : (computedCals || undefined);
 
-  return { items, totalCarbs: finalTotal, totalCals: finalCals };
+  return { items, totalCarbs: finalTotal, totalCals: finalCals, mealGi: mealGi ?? undefined };
 };
 
 export const renderFoodData = (data: FoodData, insulinRatio?: number | null): JSX.Element[] => {
@@ -142,6 +157,15 @@ export const renderFoodData = (data: FoodData, insulinRatio?: number | null): JS
     elements.push(
       <div key="total-cals">
         <strong>Total Cals</strong>: {data.totalCals} kcal
+      </div>
+    );
+  }
+
+  // Show Meal GI when available
+  if (typeof data.mealGi === 'number') {
+    elements.push(
+      <div key="meal-gi">
+        <strong>Meal GI</strong>: {data.mealGi}
       </div>
     );
   }
