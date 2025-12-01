@@ -1,43 +1,75 @@
-import weights from "./weights.json";
-import { buildFeatures } from "./buildFeatures";
+import weightsJson from "./math_model_weights.json";
 
 export interface PredictionInput {
   currentBG: number;
   carbs: number;
-  bolus: number;
-  cir: number;
+  bolus: number; // insulin units
+  cir: number; // ICR (carb:insulin ratio)
   gi?: number;
 }
+type MathWeights = {
+  HORIZONS: number[];
+  DT: number;
+  CARB_IMPACT_PER_GRAM: number;
+  GI_PARAMETERS: {
+    gi_min: number;
+    gi_max: number;
+    t_peak_low_gi: number;
+    t_peak_high_gi: number;
+    width_min: number;
+    amplitude_min: number;
+    amplitude_max: number;
+  };
+  INSULIN_PARAMETERS: {
+    t_peak_min: number;
+    width_min: number;
+    delay_min: number;
+    total_min: number;
+  };
+  ICR_ISF_RULES: {
+    isf_multiplier: number;
+  };
+  CLIPPING: {
+    MIN_BG: number;
+    MAX_BG: number;
+  };
+  carb_kernel: number[];
+  insulin_kernel: number[];
+};
 
-function validateWeights(W: any, b: any) {
-  if (!Array.isArray(W) || W.length !== 36) {
-    throw new Error("weights.W must be an array with 36 rows");
-  }
-  for (let i = 0; i < 36; i++) {
-    if (!Array.isArray(W[i]) || W[i].length !== 144) {
-      throw new Error(`weights.W[${i}] must be an array of length 144`);
-    }
-    for (let j = 0; j < 144; j++) {
-      if (typeof W[i][j] !== "number") {
-        throw new Error(`weights.W[${i}][${j}] must be a number`);
-      }
-    }
+const M = weightsJson as MathWeights;
+
+export function simulateBG(
+  currentBG: number,
+  carbs: number,
+  gi: number,
+  insulinUnits: number,
+  ICR: number,
+  weights: MathWeights = M
+): number[] {
+  const isf = ICR * weights.ICR_ISF_RULES.isf_multiplier;
+  const giAmplitude = 0.8 + 0.6 * (Math.max(0, Math.min(100, gi)) / 100);
+
+  const totalCarbEffect = carbs * weights.CARB_IMPACT_PER_GRAM * giAmplitude;
+  const totalInsulinEffect = insulinUnits * isf;
+
+  const carbFrac = weights.carb_kernel;
+  const insulinFrac = weights.insulin_kernel;
+
+  // Ensure horizons align with kernel lengths; assume kernels normalized to 0..1 cumulative
+  const horizons = weights.HORIZONS;
+  const bgSeries: number[] = new Array(horizons.length);
+
+  for (let t = 0; t < horizons.length; t++) {
+    const cf = carbFrac[Math.min(t, carbFrac.length - 1)];
+    const inf = insulinFrac[Math.min(t, insulinFrac.length - 1)];
+    let bg = currentBG + cf * totalCarbEffect - inf * totalInsulinEffect;
+    bg = Math.max(weights.CLIPPING.MIN_BG, Math.min(weights.CLIPPING.MAX_BG, bg));
+    bgSeries[t] = bg;
   }
 
-  if (!Array.isArray(b) || b.length !== 36) {
-    throw new Error("weights.b must be an array of length 36");
-  }
-  for (let i = 0; i < 36; i++) {
-    if (typeof b[i] !== "number") {
-      throw new Error(`weights.b[${i}] must be a number`);
-    }
-  }
+  return bgSeries;
 }
-
-const raw = weights as any;
-validateWeights(raw.W, raw.b);
-const modelW: number[][] = raw.W;
-const modelB: number[] = raw.b;
 
 export function predictDelta(
   carbs: number,
@@ -45,18 +77,18 @@ export function predictDelta(
   cir: number,
   gi: number = 55
 ): number[] {
-  const X = buildFeatures(carbs, bolus, cir, gi);
-
-  return modelB.map((bias, i) => {
-    let sum = bias;
-    for (let j = 0; j < X.length; j++) {
-      sum += X[j] * modelW[i][j];
-    }
-    return sum;
-  });
+  const bg = simulateBG(0, carbs, gi, bolus, cir, M);
+  return bg; // relative to 0, so this is delta
 }
 
 export function predictAbsolute(input: PredictionInput): number[] {
-  const deltas = predictDelta(input.carbs, input.bolus, input.cir, input.gi ?? 55);
-  return deltas.map(delta => input.currentBG + delta);
+  // Preserve signature and output shape
+  return simulateBG(
+    input.currentBG,
+    input.carbs,
+    input.gi ?? 55,
+    input.bolus,
+    input.cir,
+    M
+  );
 }

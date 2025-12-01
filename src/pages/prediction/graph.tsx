@@ -59,7 +59,7 @@ export const PredictionPage: React.FC = () => {
                     value={currentBG}
                     onChange={(e) => setCurrentBG(Number(e.target.value))}
                     className="input-field"
-                    placeholder="98"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -71,19 +71,19 @@ export const PredictionPage: React.FC = () => {
                     value={carbs}
                     onChange={(e) => setCarbs(Number(e.target.value))}
                     className="input-field"
-                    placeholder="83"
+                    placeholder="0"
                   />
                 </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Glycemic Index (0-150)</label>
+                <label className="input-label">Glycemic Index (0-100)</label>
                 <div className="input-wrapper">
                   <input
                     type="number"
                     value={gi}
                     onChange={(e) => setGi(Number(e.target.value))}
                     className="input-field"
-                    placeholder="55"
+                    placeholder="0"
                   />
                 </div>
               </div>
@@ -95,12 +95,12 @@ export const PredictionPage: React.FC = () => {
                     value={bolus}
                     onChange={(e) => setBolus(Number(e.target.value))}
                     className="input-field"
-                    placeholder="10"
+                    placeholder="0"
                   />
                 </div>
               </div>
               <div className="input-group">
-                <label className="input-label">Carb-to-Insulin Ratio (g/U)</label>
+                <label className="input-label">Carb-to-Insulin Ratio (U/g)</label>
                 <div className="input-wrapper">
                   <input
                     type="number"
@@ -108,7 +108,7 @@ export const PredictionPage: React.FC = () => {
                     value={cir}
                     onChange={(e) => setCir(Number(e.target.value))}
                     className="input-field"
-                    placeholder="4.2"
+                    placeholder="0"
                   />
                 </div>
               </div>
