@@ -28,29 +28,21 @@ export interface Meal {
 export const getOrCreateDailyLog = async (userId: string): Promise<DailyLog> => {
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-  // Try to find existing log for today
-  const { data: existingLog, error: selectError } = await supabase
+  // Upsert avoids a separate select + insert roundtrip
+  // Requires a unique constraint on (user_id, log_date) in daily_logs
+  const { data, error } = await supabase
     .from('daily_logs')
+    .upsert(
+      [{ user_id: userId, log_date: today, total_carbs: 0, total_insulin: 0 }],
+      { onConflict: 'user_id,log_date' }
+    )
     .select('*')
     .eq('user_id', userId)
     .eq('log_date', today)
     .maybeSingle();
 
-  if (selectError) throw selectError;
-
-  if (existingLog) {
-    return existingLog as DailyLog;
-  }
-
-  // Create new log for today
-  const { data: newLog, error: insertError } = await supabase
-    .from('daily_logs')
-    .insert([{ user_id: userId, log_date: today, total_carbs: 0, total_insulin: 0 }])
-    .select()
-    .maybeSingle();
-
-  if (insertError) throw insertError;
-  return newLog as DailyLog;
+  if (error) throw error;
+  return data as DailyLog;
 };
 
 /**
@@ -65,11 +57,8 @@ export const saveMeal = async (
   currentGlucose?: number,
   imageUrl?: string | null
 ): Promise<Meal> => {
-  console.log('saveMeal called with:', { userId, foodName, carbsGrams, insulinTaken });
-
   // Get or create today's daily log
   const dailyLog = await getOrCreateDailyLog(userId);
-  console.log('Daily log:', dailyLog);
 
   // Insert the meal (include optional image_url)
   const { data: meal, error: mealError } = await supabase
@@ -89,8 +78,6 @@ export const saveMeal = async (
     .maybeSingle();
 
   if (mealError) throw mealError;
-  console.log('Meal saved:', meal);
-
   // Update daily log totals
   const newTotalCarbs = (dailyLog.total_carbs || 0) + carbsGrams;
   const newTotalInsulin = (dailyLog.total_insulin || 0) + insulinTaken;
@@ -104,7 +91,6 @@ export const saveMeal = async (
     .eq('id', dailyLog.id);
 
   if (updateError) throw updateError;
-  console.log('Daily log updated with totals:', { newTotalCarbs, newTotalInsulin });
 
   return meal as Meal;
 };
@@ -113,26 +99,21 @@ export const saveMeal = async (
  * Fetch all meals for a user on a specific date with full details
  */
 export const fetchMealsForDateWithDetails = async (userId: string, date: string): Promise<Meal[]> => {
-  // First get the daily log for this date
-  const { data: dailyLog, error: logError } = await supabase
-    .from('daily_logs')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('log_date', date)
-    .maybeSingle();
-
-  if (logError) throw logError;
-  if (!dailyLog) return [];
-
-  // Then fetch all meals for that daily log
-  const { data: meals, error: mealsError } = await supabase
+  // Single roundtrip using an inner join to filter meals by the user's daily log
+  const { data, error } = await supabase
     .from('meals')
-    .select('*')
-    .eq('daily_log_id', dailyLog.id)
+    .select('*, daily_logs!inner(id, user_id, log_date)')
+    .eq('daily_logs.user_id', userId)
+    .eq('daily_logs.log_date', date)
     .order('meal_timestamp', { ascending: true });
 
-  if (mealsError) throw mealsError;
-  return (meals || []) as Meal[];
+  if (error) throw error;
+  // Strip the joined daily_logs object if present
+  const meals = (data || []).map((m: any) => {
+    const { daily_logs, ...rest } = m;
+    return rest as Meal;
+  });
+  return meals as Meal[];
 };
 
 /**

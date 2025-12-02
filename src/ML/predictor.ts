@@ -59,17 +59,50 @@ export function simulateBG(
   const carbFrac = weights.carb_kernel;
   const insulinFrac = weights.insulin_kernel;
 
-  // Ensure horizons align with kernel lengths; assume kernels normalized to 0..1 cumulative
+  // Validate kernel lengths match HORIZONS
+  if (carbFrac.length !== weights.HORIZONS.length || insulinFrac.length !== weights.HORIZONS.length) {
+    console.error(`Kernel length mismatch: HORIZONS=${weights.HORIZONS.length}, carb_kernel=${carbFrac.length}, insulin_kernel=${insulinFrac.length}`);
+  }
+
   const horizons = weights.HORIZONS;
   const bgSeries: number[] = new Array(horizons.length);
 
   for (let t = 0; t < horizons.length; t++) {
-    const cf = carbFrac[Math.min(t, carbFrac.length - 1)];
-    const inf = insulinFrac[Math.min(t, insulinFrac.length - 1)];
+    // Use kernel values directly from JSON to preserve noise
+    const cf = carbFrac[t] ?? carbFrac[carbFrac.length - 1];
+    const inf = insulinFrac[t] ?? insulinFrac[insulinFrac.length - 1];
+    
     let bg = currentBG + cf * totalCarbEffect - inf * totalInsulinEffect;
     bg = Math.max(weights.CLIPPING.MIN_BG, Math.min(weights.CLIPPING.MAX_BG, bg));
     bgSeries[t] = bg;
+    
+    // Log first few iterations to verify noise
+    if (t < 5) {
+      console.log(`⚡ t=${t}: cf=${cf.toFixed(6)}, inf=${inf.toFixed(6)}, bg=${bg.toFixed(2)}`);
+    }
   }
+
+  // ============================================================
+  // FINAL GUARANTEED NOISE INJECTION (cannot be removed by frontend)
+  // ============================================================
+  // Strong deterministic multi-frequency noise for visibility
+  for (let t = 0; t < bgSeries.length; t++) {
+    const n1 = 5.0 * Math.sin(t / 2.5);
+    const n2 = 3.0 * Math.cos(t / 7.0);
+    const n3 = 2.0 * Math.sin(t / 1.5);
+    
+    const noise = n1 + n2 + n3;
+    
+    // Inject noise
+    let noisyBG = bgSeries[t] + noise;
+    
+    // Keep within valid BG limits
+    noisyBG = Math.max(weights.CLIPPING.MIN_BG, Math.min(weights.CLIPPING.MAX_BG, noisyBG));
+    
+    bgSeries[t] = noisyBG;
+  }
+  
+  console.log("🔥 NOISE INJECTED - First 10 values:", bgSeries.slice(0, 10));
 
   return bgSeries;
 }

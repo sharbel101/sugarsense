@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import './graph.css';
 import { predictAbsolute } from '@/ML/predictor';
-import { getStepKernel } from '@/ML/getStepKernel';
+import weightsJson from '@/ML/math_model_weights.json';
 import Header from '@/components/Header/Header';
 import { selectUser } from '@/features/user/userSlice';
 import { fetchMealsForDateWithDetails, Meal } from '@/api/mealsApi';
@@ -63,6 +63,17 @@ export const PredictionPage: React.FC = () => {
         cir: parsedCir,
         gi: parsedGi,
       });
+      console.log('🔍 Raw prediction values (first 10):', res.slice(0, 10));
+      console.log('📊 Prediction stats:', {
+        length: res.length,
+        min: Math.min(...res),
+        max: Math.max(...res),
+        mean: res.reduce((a, b) => a + b, 0) / res.length,
+        variance: res.reduce((sum, val, _, arr) => {
+          const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+          return sum + Math.pow(val - mean, 2);
+        }, 0) / res.length
+      });
       setPred(res);
     } catch (e: any) {
       setError(e?.message || 'Failed to generate prediction');
@@ -70,8 +81,8 @@ export const PredictionPage: React.FC = () => {
     }
   };
 
-  const kernel = getStepKernel(45, 40);
-  const totalTime = kernel.length * 5;
+  // Use HORIZONS from JSON to match prediction length
+  const totalTime = weightsJson.HORIZONS[weightsJson.HORIZONS.length - 1];
 
   const minPred = pred ? Math.min(...pred) : 0;
   const maxPred = pred ? Math.max(...pred) : 0;
@@ -352,7 +363,10 @@ export const PredictionPage: React.FC = () => {
 };
 
 
-function SimpleLineChart({ data, minPred, maxPred }: { data: number[]; totalTime?: number; minPred: number; maxPred: number }) {
+function SimpleLineChart({ data, maxPred }: { data: number[]; totalTime?: number; minPred: number; maxPred: number }) {
+  const [hoveredPoint, setHoveredPoint] = React.useState<number | null>(null);
+  const [tooltipPos, setTooltipPos] = React.useState<{x: number, y: number} | null>(null);
+  
   // Mobile-optimized: compact spacing for less scrolling
   const pointSpacing = 35; // pixels between each data point (reduced from 60)
   const width = data.length * pointSpacing;
@@ -363,17 +377,20 @@ function SimpleLineChart({ data, minPred, maxPred }: { data: number[]; totalTime
 
   // Calculate coordinates
   const xs = data.map((_, i) => padding.left + (i / Math.max(1, data.length - 1)) * chartWidth);
-  const range = maxPred - minPred || 1;
-  const ys = data.map(v => padding.top + (1 - (v - minPred) / range) * chartHeight);
+  // Fixed Y-axis range
+  const yMin = 50;
+  const yMax = 225;
+  const range = yMax - yMin;
+  const ys = data.map(v => padding.top + (1 - (v - yMin) / range) * chartHeight);
 
-  // SVG path for the line
-  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${ys[i].toFixed(2)}`).join(' ');
+  // SVG path for the line - use 4 decimal precision to preserve noise
+  const path = xs.map((x, i) => `${i === 0 ? 'M' : 'L'} ${x.toFixed(4)} ${ys[i].toFixed(4)}`).join(' ');
 
   // Y-axis labels (grid with glucose values) - reversed to show high to low
   const yTicks = 4;
   const yLabels = Array.from({ length: yTicks + 1 }, (_, i) => {
     const t = i / yTicks;
-    return maxPred - t * range; // reversed: start from max, go down to min
+    return yMax - t * range; // reversed: start from max, go down to min
   });
 
   // X-axis labels - show every 3rd point for mobile readability
@@ -382,8 +399,45 @@ function SimpleLineChart({ data, minPred, maxPred }: { data: number[]; totalTime
     .filter((_, i) => i % 3 === 0);
 
   return (
-    <div className="simple-line-chart">
-      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="chart-svg">
+    <div className="simple-line-chart" style={{ overflowX: 'auto', overflowY: 'hidden', maxWidth: '100%' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="chart-svg" style={{ minWidth: '100%' }}>
+        {/* Background zones */}
+        {(() => {
+          const hypoY = padding.top + (1 - (70 - yMin) / range) * chartHeight;
+          const hyperY = padding.top + (1 - (180 - yMin) / range) * chartHeight;
+          return (
+            <>
+              {/* Hypoglycemia zone (below 70) - red */}
+              <rect
+                x={padding.left}
+                y={hypoY}
+                width={chartWidth}
+                height={height - padding.bottom - hypoY}
+                fill="#fca5a5"
+                opacity="0.3"
+              />
+              {/* Hyperglycemia zone (above 180) - yellow/orange */}
+              <rect
+                x={padding.left}
+                y={padding.top}
+                width={chartWidth}
+                height={hyperY - padding.top}
+                fill="#fde68a"
+                opacity="0.3"
+              />
+              {/* Normal range (70-180) - green tint */}
+              <rect
+                x={padding.left}
+                y={hyperY}
+                width={chartWidth}
+                height={hypoY - hyperY}
+                fill="#bbf7d0"
+                opacity="0.2"
+              />
+            </>
+          );
+        })()}
+        
         {/* Grid background */}
         <defs>
           <pattern id="grid" width="40" height={chartHeight / yTicks} patternUnits="userSpaceOnUse" x={padding.left} y={padding.top}>
@@ -412,24 +466,87 @@ function SimpleLineChart({ data, minPred, maxPred }: { data: number[]; totalTime
         <line x1={padding.left} y1={height - padding.bottom} x2={width - padding.right} y2={height - padding.bottom} stroke="#374151" strokeWidth="2" />
 
         {/* Chart line */}
-        <path d={path} fill="none" stroke="#10b981" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={path} fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
 
-        {/* Area under line (gradient fill) */}
-        <defs>
-          <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
-          </linearGradient>
-        </defs>
-        <path
-          d={`${path} L ${xs[xs.length - 1]} ${height - padding.bottom} L ${xs[0]} ${height - padding.bottom} Z`}
-          fill="url(#areaGradient)"
-        />
-
-        {/* Data points */}
+        {/* Data point dots */}
         {xs.map((x, i) => (
-          <circle key={`point-${i}`} cx={x} cy={ys[i]} r="5" fill="#10b981" stroke="white" strokeWidth="2" />
+          <circle 
+            key={`dot-${i}`} 
+            cx={x} 
+            cy={ys[i]} 
+            r={hoveredPoint === i ? 6 : 4} 
+            fill="#3b82f6" 
+            stroke="white" 
+            strokeWidth="2"
+            style={{ cursor: 'pointer' }}
+            onMouseEnter={() => {
+              setHoveredPoint(i);
+              setTooltipPos({ x, y: ys[i] });
+            }}
+            onMouseLeave={() => {
+              setHoveredPoint(null);
+              setTooltipPos(null);
+            }}
+            onClick={() => {
+              setHoveredPoint(i);
+              setTooltipPos({ x, y: ys[i] });
+            }}
+          />
         ))}
+        
+        {/* Peak star marker */}
+        {(() => {
+          const peakIdx = data.indexOf(maxPred);
+          const peakX = xs[peakIdx];
+          const peakY = ys[peakIdx];
+          return (
+            <g>
+              {/* Star shape */}
+              <path
+                d={`M ${peakX} ${peakY - 12} L ${peakX + 3.5} ${peakY - 3.5} L ${peakX + 12} ${peakY - 3.5} L ${peakX + 5} ${peakY + 2} L ${peakX + 7.5} ${peakY + 11} L ${peakX} ${peakY + 6} L ${peakX - 7.5} ${peakY + 11} L ${peakX - 5} ${peakY + 2} L ${peakX - 12} ${peakY - 3.5} L ${peakX - 3.5} ${peakY - 3.5} Z`}
+                fill="#dc2626"
+                stroke="white"
+                strokeWidth="1.5"
+              />
+            </g>
+          );
+        })()}
+        
+        {/* Tooltip */}
+        {hoveredPoint !== null && tooltipPos && (
+          <g>
+            <rect
+              x={tooltipPos.x - 50}
+              y={tooltipPos.y - 50}
+              width="100"
+              height="40"
+              fill="white"
+              stroke="#3b82f6"
+              strokeWidth="2"
+              rx="6"
+              opacity="0.95"
+            />
+            <text
+              x={tooltipPos.x}
+              y={tooltipPos.y - 32}
+              textAnchor="middle"
+              fontSize="12"
+              fontWeight="600"
+              fill="#374151"
+            >
+              {data[hoveredPoint].toFixed(1)} mg/dL
+            </text>
+            <text
+              x={tooltipPos.x}
+              y={tooltipPos.y - 18}
+              textAnchor="middle"
+              fontSize="11"
+              fill="#6b7280"
+            >
+              Time: {hoveredPoint * 5} min
+            </text>
+          </g>
+        )}
 
         {/* Y-axis labels */}
         {yLabels.map((val, i) => (
@@ -451,6 +568,31 @@ function SimpleLineChart({ data, minPred, maxPred }: { data: number[]; totalTime
         <text x={14} y={padding.top - 10} fontSize="12" fill="#9ca3af" fontWeight="600" textAnchor="start" className="chart-label">
           mg/dL
         </text>
+
+        {/* Threshold lines */}
+        {(() => {
+          const hypoY = padding.top + (1 - (70 - yMin) / range) * chartHeight;
+          const hyperY = padding.top + (1 - (180 - yMin) / range) * chartHeight;
+          return (
+            <>
+              <line x1={padding.left} x2={width - padding.right} y1={hypoY} y2={hypoY} stroke="#dc2626" strokeWidth="1.5" strokeDasharray="5,5" />
+              <line x1={padding.left} x2={width - padding.right} y1={hyperY} y2={hyperY} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="5,5" />
+            </>
+          );
+        })()}
+
+        {/* Legend box */}
+        <g transform={`translate(${width - padding.right - 220}, ${padding.top + 10})`}>
+          <rect x="0" y="0" width="210" height="85" fill="white" stroke="#d1d5db" strokeWidth="1" rx="4" opacity="0.95" />
+          <line x1="10" x2="30" y1="18" y2="18" stroke="#3b82f6" strokeWidth="3" />
+          <text x="35" y="22" fontSize="11" fill="#374151" fontWeight="500">Predicted Blood Glucose</text>
+          <line x1="10" x2="30" y1="38" y2="38" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="5,5" />
+          <text x="35" y="42" fontSize="11" fill="#374151">Hypoglycemia (70 mg/dL)</text>
+          <line x1="10" x2="30" y1="58" y2="58" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="5,5" />
+          <text x="35" y="62" fontSize="11" fill="#374151">Hyperglycemia (180 mg/dL)</text>
+          <path d="M 15 73 L 18 66 L 21 73 L 27 73 L 22 77 L 24 84 L 18 80 L 12 84 L 14 77 L 9 73 Z" fill="#dc2626" />
+          <text x="35" y="82" fontSize="11" fill="#374151">Starting BG ({data[0].toFixed(0)})</text>
+        </g>
 
         {/* X-axis labels */}
         {xLabels.map((label, i) => {
