@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import './graph.css';
 import { predictAbsolute } from '@/ML/predictor';
 import { getStepKernel } from '@/ML/getStepKernel';
 import Header from '@/components/Header/Header';
+import { selectUser } from '@/features/user/userSlice';
+import { fetchMealsForDateWithDetails, Meal } from '@/api/mealsApi';
 
 export const PredictionPage: React.FC = () => {
   const navigate = useNavigate();
+  const user = useSelector(selectUser);
   // Use string state to allow empty inputs without forcing 0
   const [currentBG, setCurrentBG] = useState<string>("");
   const [carbs, setCarbs] = useState<string>("");
@@ -15,6 +19,36 @@ export const PredictionPage: React.FC = () => {
   const [gi, setGi] = useState<string>("");
   const [pred, setPred] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recentMeals, setRecentMeals] = useState<Meal[]>([]);
+  const [loadingMeals, setLoadingMeals] = useState(false);
+
+  // Fetch recent meals on mount
+  useEffect(() => {
+    const fetchRecentMeals = async () => {
+      if (!user?.id) return;
+      
+      setLoadingMeals(true);
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const meals = await fetchMealsForDateWithDetails(user.id, today);
+        // Get last 3 meals
+        setRecentMeals(meals.slice(-3).reverse());
+      } catch (err) {
+        console.error('Failed to fetch recent meals:', err);
+      } finally {
+        setLoadingMeals(false);
+      }
+    };
+
+    fetchRecentMeals();
+  }, [user?.id]);
+
+  const handleUseValues = (meal: Meal) => {
+    setCarbs(meal.carbs_grams.toString());
+    setBolus((meal.insulin_taken ?? 0).toFixed(1));
+    setGi((meal.glycemic_index ?? 0).toString());
+    setCir((user?.insulinRatio ?? 0).toString());
+  };
 
   const handlePredict = () => {
     try {
@@ -59,6 +93,35 @@ export const PredictionPage: React.FC = () => {
               <p className="text-emerald-600 text-sm md:text-base">Enter your current metrics to predict blood glucose over the next {totalTime} minutes</p>
             </div>
           </div>
+
+          {/* Recent Meals Section */}
+          {recentMeals.length > 0 && (
+            <div className="rounded-3xl border border-emerald-100 bg-white/90 p-6 md:p-8 shadow-lg backdrop-blur-sm mb-8">
+              <h2 className="text-xl font-bold text-emerald-900 mb-4">Recent Meals (Today)</h2>
+              <div className="space-y-3">
+                {recentMeals.map((meal) => (
+                  <div key={meal.id} className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-emerald-900 mb-1">{meal.food_name}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-emerald-700">
+                          <span><strong>Carbs:</strong> {meal.carbs_grams}g</span>
+                          <span><strong>Insulin:</strong> {(meal.insulin_taken ?? 0).toFixed(1)} U</span>
+                          {meal.glycemic_index && <span><strong>GI:</strong> {meal.glycemic_index}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleUseValues(meal)}
+                      className="w-full px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-colors"
+                    >
+                      Use Values
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Input Form Card */}
           <div className="rounded-3xl border border-emerald-100 bg-white/90 p-6 md:p-8 shadow-lg backdrop-blur-sm mb-8">
