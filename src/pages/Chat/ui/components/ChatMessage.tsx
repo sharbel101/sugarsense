@@ -241,7 +241,39 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
           </div>
         )}
 
-        {!image && hasStringText && <p>{stringText}</p>}
+        {!image && hasStringText && stringText && (
+          stringText.includes('Welcome to SugarSense — Your Smart Diabetes Companion') ? (
+            <div className="rounded-2xl bg-white p-4 md:p-5 text-green-900 shadow-sm border border-green-200">
+              <h3 className="text-lg md:text-xl font-bold mb-2">Welcome to SugarSense — Your Smart Diabetes Companion</h3>
+              <p className="text-sm md:text-base mb-4">SugarSense helps you understand your meals, track your blood sugar, and stay in control with simple, easy-to-use features.</p>
+
+              <div className="space-y-3">
+                <div className="bg-green-50 border border-green-100 rounded-xl p-3">
+                  <p className="font-semibold">Instant Meal Analysis</p>
+                  <p className="text-sm md:text-base">Take a photo of your food and SugarSense instantly estimates carbohydrates, calories, and glycemic index. It can also suggest insulin doses based on your personal needs. Every meal is automatically saved with its image and nutritional details.</p>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                  <p className="font-semibold">Blood Glucose Predictions</p>
+                  <p className="text-sm md:text-base">Enter your current blood sugar, carbs, and insulin dose, and SugarSense shows how your levels may change over the next few hours. A clear color-coded graph highlights safe, high, and low ranges, along with your predicted peak.</p>
+                </div>
+                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                  <p className="font-semibold">Meal History and Daily Insights</p>
+                  <p className="text-sm md:text-base">Review your past meals with pictures and nutritional breakdowns. Track your daily totals and long-term trends to better understand your patterns.</p>
+                </div>
+                <div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
+                  <p className="font-semibold">Doctor Dashboard (For Healthcare Providers)</p>
+                  <p className="text-sm md:text-base">Healthcare providers can securely view their patients’ meal logs and glucose data, monitor progress, and identify patterns over time.</p>
+                </div>
+                <div className="bg-cyan-50 border border-cyan-100 rounded-xl p-3">
+                  <p className="font-semibold">Patient Overview</p>
+                  <p className="text-sm md:text-base">Doctors can see detailed profiles that include meal history, daily summaries, and insulin settings.</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p>{stringText}</p>
+          )
+        )}
         {Array.isArray(text) && text}
         {isFoodData(text) && !editMode && renderFoodData(text)}
 
