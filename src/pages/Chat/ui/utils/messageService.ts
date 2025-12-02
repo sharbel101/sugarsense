@@ -106,14 +106,15 @@ export const buildFullPrompt = (userComment: string): string => {
 export const analyzeFoodImage = async (
   imageFile: File,
   userComment: string,
-  isMorningMode: boolean
+  isMorningMode: boolean,
+  insulinRatio: number | null
 ): Promise<FoodData> => {
   const resizedImage = await resizeImage(imageFile, 512, 512);
   const prompt = buildFullPrompt(userComment);
   console.log('[messageService] Prompt sent to API:\n', prompt);
   const predictionText = await getCarbPrediction(prompt, resizedImage);
   console.log('[messageService] Raw prediction text from API:\n', predictionText);
-  const baseData = formatApiResponse(predictionText);
+  const baseData = formatApiResponse(predictionText, insulinRatio);
   console.log('[messageService] Parsed FoodData:', baseData);
   return { ...baseData, isMorningMode };
 };

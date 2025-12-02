@@ -79,7 +79,7 @@ export const Page: React.FC = () => {
       setPendingImage(null);
 
       try {
-        const formattedResponse = await analyzeFoodImage(file, trimmedText, false);
+        const formattedResponse = await analyzeFoodImage(file, trimmedText, false, user?.insulinRatio ?? null);
 
         setMessages((prev) =>
           prev.map((msg) =>

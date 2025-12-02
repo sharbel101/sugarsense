@@ -9,6 +9,7 @@ export interface FoodData {
   totalCarbs: number;
   totalCals?: number;
   mealGi?: number;
+  insulinUnits?: number; // Calculated once based on user's ratio
   isMorningMode?: boolean;
 }
 
@@ -30,7 +31,7 @@ export const calculateInsulin = (carbs: number, insulinRatio: number = 1): numbe
  * - Ignores weights like "220 g" and calories like "480 cals"
  * - Extracts "Total" carbs if present; otherwise sums parsed item carbs as fallback
  */
-export const formatApiResponse = (text: string): FoodData => {
+export const formatApiResponse = (text: string, insulinRatio?: number | null): FoodData => {
   if (!text || !text.trim()) return { items: [], totalCarbs: 0 };
 
   // Match exactly the carb token; disallow plain "g" without "carb".
@@ -136,7 +137,17 @@ export const formatApiResponse = (text: string): FoodData => {
   const computedCals = items.reduce((acc, it) => acc + (it.cals || 0), 0);
   const finalCals = totalCals !== null ? totalCals : (computedCals || undefined);
 
-  const result = { items, totalCarbs: finalTotal, totalCals: finalCals, mealGi: mealGi ?? undefined };
+  // Calculate insulin once based on provided ratio
+  const effectiveRatio = insulinRatio ?? 4; // fallback to 4 if not provided
+  const insulinUnits = calculateInsulin(finalTotal, effectiveRatio);
+  
+  const result = { 
+    items, 
+    totalCarbs: finalTotal, 
+    totalCals: finalCals, 
+    mealGi: mealGi ?? undefined,
+    insulinUnits 
+  };
   console.log('[nutrition] Final parsed result:', result);
   return result;
 };
@@ -175,9 +186,8 @@ export const renderFoodData = (data: FoodData, insulinRatio?: number | null): JS
     );
   }
 
-  // Use provided insulinRatio or fallback to 4 (default estimate)
-  const ratio = insulinRatio ?? 4;
-  const bolus = calculateInsulin(data.totalCarbs, ratio);
+  // Use pre-calculated insulin from FoodData (calculated once at parse time)
+  const bolus = data.insulinUnits ?? calculateInsulin(data.totalCarbs, insulinRatio ?? 4);
 
   elements.push(
     <div

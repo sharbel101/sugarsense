@@ -75,11 +75,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   const handleSave = () => {
     const newTotalCarbs = foodItems.reduce((acc, it) => acc + sanitizeCarbs(it.carbs), 0);
+    
+    // Preserve other fields from original FoodData when editing
+    const originalData = isFoodData(text) ? text : null;
+    const insulinRatio = user?.insulinRatio ?? 4;
+    const newInsulinUnits = calculateInsulin(newTotalCarbs, insulinRatio);
 
-    // Send updated data back up; bolus is recalculated inside renderFoodData in Page.tsx
+    // Send updated data back up with recalculated insulin
     onUpdateMessage(message.id, {
       items: foodItems.map(it => ({ name: it.name, carbs: sanitizeCarbs(it.carbs) })),
       totalCarbs: Math.round(newTotalCarbs * 10) / 10,
+      totalCals: originalData?.totalCals,
+      mealGi: originalData?.mealGi,
+      insulinUnits: newInsulinUnits,
     });
 
     setEditMode(false);
@@ -121,35 +129,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     try {
       console.log('Approving meal with data:', text);
       
-      // Aggregate all food items into one meal
+      // Use exact parsed values from FoodData - no recalculation
       const mealName = text.items.map((item) => item.name).join(', ');
-      const totalCarbs = text.items.reduce((sum, item) => sum + item.carbs, 0);
-      
-      // Calculate total insulin based on carbs and user's insulin ratio
-      let insulinRatio = user?.insulinRatio;
-      console.log('insulinRatio from Redux:', insulinRatio);
-      
-      if (!insulinRatio || insulinRatio === null) {
-        // Fallback: try to fetch from DB if Redux is empty (edge case)
-        try {
-          const row = await getUserRow(effectiveUserId);
-          insulinRatio = (row as any)?.insulinRatio ?? (row as any)?.insulin_ratio ?? null;
-          console.log('Fallback: insulinRatio from DB:', insulinRatio);
-        } catch (e) {
-          console.warn('Could not fetch user row for insulin ratio', e);
-        }
-      }
-      
-      // Final fallback to 1 if still null
-      if (!insulinRatio || insulinRatio === null) {
-        console.warn('No insulinRatio found, using fallback of 1');
-        insulinRatio = 1;
-      }
-      
-      const totalInsulin = calculateInsulin(totalCarbs, insulinRatio);
+      const totalCarbs = text.totalCarbs; // Use parsed total, not recalculated
+      const totalInsulin = text.insulinUnits ?? 0; // Use pre-calculated insulin
+      const glycemicIndex = text.mealGi ?? undefined; // Use parsed GI
       
       console.log(`Saving meal: ${mealName}`);
-      console.log(`Total carbs: ${totalCarbs}g, insulinRatio: ${insulinRatio}, Total insulin: ${totalInsulin} units`);
+      console.log(`Exact values from FoodData - Carbs: ${totalCarbs}g, Insulin: ${totalInsulin} units, GI: ${glycemicIndex ?? 'N/A'}`);
       
       // If there's an image attached to the message, upload it first
       let imageUrl: string | undefined = undefined;
@@ -197,7 +184,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
               mealName,
               totalCarbs,
               totalInsulin,
-              undefined, // glycemicIndex
+              glycemicIndex, // Use parsed GI from FoodData
               undefined, // currentGlucose
               imageUrl ?? null
             ),
