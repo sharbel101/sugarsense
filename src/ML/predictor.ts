@@ -16,7 +16,8 @@ type MathWeights = {
     gi_max: number;
     t_peak_low_gi: number;
     t_peak_high_gi: number;
-    width_min: number;
+    width_low_gi: number;
+    width_high_gi: number;
     amplitude_min: number;
     amplitude_max: number;
   };

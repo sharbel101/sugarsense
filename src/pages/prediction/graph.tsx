@@ -20,14 +20,12 @@ export const PredictionPage: React.FC = () => {
   const [pred, setPred] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentMeals, setRecentMeals] = useState<Meal[]>([]);
-  const [loadingMeals, setLoadingMeals] = useState(false);
 
   // Fetch recent meals on mount
   useEffect(() => {
     const fetchRecentMeals = async () => {
       if (!user?.id) return;
       
-      setLoadingMeals(true);
       try {
         const today = new Date().toISOString().split('T')[0];
         const meals = await fetchMealsForDateWithDetails(user.id, today);
@@ -35,8 +33,6 @@ export const PredictionPage: React.FC = () => {
         setRecentMeals(meals.slice(-3).reverse());
       } catch (err) {
         console.error('Failed to fetch recent meals:', err);
-      } finally {
-        setLoadingMeals(false);
       }
     };
 
