@@ -4,7 +4,6 @@ import { FoodData, FoodItem, calculateInsulin } from '../utils/nutrition';
 import { saveMeal } from '@/api/mealsApi';
 import { selectUser } from '@/features/user/userSlice';
 import { supabase } from '@/api/supabaseClient';
-import { getUserRow } from '@/api/userApi';
 import { uploadImageToStorage } from '@/api/storageApi';
 
 // Helper to add a timeout to promises

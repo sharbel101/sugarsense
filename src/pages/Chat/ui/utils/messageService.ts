@@ -112,9 +112,37 @@ export const analyzeFoodImage = async (
   const resizedImage = await resizeImage(imageFile, 512, 512);
   const prompt = buildFullPrompt(userComment);
   console.log('[messageService] Prompt sent to API:\n', prompt);
-  const predictionText = await getCarbPrediction(prompt, resizedImage);
-  console.log('[messageService] Raw prediction text from API:\n', predictionText);
-  const baseData = formatApiResponse(predictionText, insulinRatio);
-  console.log('[messageService] Parsed FoodData:', baseData);
-  return { ...baseData, isMorningMode };
+  
+  const maxRetries = 3;
+  let attempt = 0;
+  let baseData: FoodData | null = null;
+  
+  while (attempt < maxRetries) {
+    attempt++;
+    console.log(`[messageService] Attempt ${attempt}/${maxRetries}`);
+    
+    const predictionText = await getCarbPrediction(prompt, resizedImage);
+    console.log('[messageService] Raw prediction text from API:\n', predictionText);
+    
+    baseData = formatApiResponse(predictionText, insulinRatio);
+    console.log('[messageService] Parsed FoodData:', baseData);
+    
+    // Check if we got valid carbs (> 0)
+    if (baseData.totalCarbs > 0) {
+      console.log(`[messageService] ✓ Valid carbs detected: ${baseData.totalCarbs}g`);
+      break;
+    }
+    
+    console.warn(`[messageService] ✗ Invalid response: 0 carbs detected. Retrying...`);
+    
+    if (attempt >= maxRetries) {
+      console.error('[messageService] Max retries reached. Returning result with 0 carbs.');
+      break;
+    }
+    
+    // Small delay before retry
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+  
+  return { ...baseData!, isMorningMode };
 };
