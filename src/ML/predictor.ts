@@ -22,9 +22,11 @@ type MathWeights = {
     amplitude_max: number;
   };
   INSULIN_PARAMETERS: {
-    t_peak_min: number;
-    width_min: number;
-    delay_min: number;
+    onset: number;
+    peak: number;
+    duration: number;
+    alpha: number;
+    beta: number;
     total_min: number;
   };
   ICR_ISF_RULES: {
