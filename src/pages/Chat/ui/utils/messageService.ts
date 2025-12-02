@@ -39,6 +39,27 @@ RULES
 - GI must NOT influence carb gram estimates.
 - No markdown, no bullet symbols other than the required "-  " for ingredients, no explanations.
 
+GI ESTIMATION (silent)
+- GI should remain LOW by default.
+- GI should ONLY exceed 35 if the dominant carbohydrate source is:
+     * pure sugar  
+     * sweetened beverages  
+     * candy  
+     * desserts made of refined sugar  
+     * highly refined starch (white bread, white rice, fries, pastry crust)
+- Protein, fat, and fiber must drastically reduce GI. Meals containing:
+     * meats  
+     * cheese  
+     * eggs  
+     * nuts  
+     * beans  
+     * vegetables  
+     * whole grains  
+     will have a noticeably LOWER GI because these components slow gastric emptying.
+- Mixed meals with protein, fat, sauces, breading, or vegetables should almost always result in a GI below 30–35.
+- ONLY assign a GI above 35 when the carbohydrates are mostly fast-absorbing sugars with minimal protein/fat/fiber present.
+- GI must never be based on carb quantity or portion size — only type and composition.
+
 USER OVERRIDES
 - If user says to exclude an item, do not list or count it at all.
 - If user says “count only <item(s)>”, include only those items.
@@ -57,44 +78,29 @@ ESTIMATION PIPELINE (silent)
    - Store the count per item type internally.
 
 3) PORTION SIZE
-   - Use visible references: plate diameter, utensils (fork, spoon, knife), hands, cups, bowls, and common object analogies (golf ball, tennis ball, fist, deck of cards).
-   - Convert visual portion → approximate volume or weight → grams of carbohydrate using typical reference values (e.g., standard slice of bread, standard scoop of rice/pasta, typical fast-food fries portion).
-   - For mixed dishes (e.g., pasta with sauce, casserole, pizza), estimate the carb-dominant portion (crust, noodles, rice, potato, batter) separately from toppings.
+   - Use visible references: plate diameter, utensils, hands, cups, bowls, and common household portion analogies.
+   - Convert visual portion → approximate volume or weight → grams of carbohydrate using standard references.
+   - For mixed dishes (pasta, casseroles, pizza), estimate the carb-dominant portion separately from toppings.
 
 4) CARB ESTIMATION
    - Estimate carbs per single unit (piece, slice, scoop, cup, etc.).
-   - Multiply by number of units internally, but output as ONE grouped ingredient line per identical item type.
+   - Multiply by number of units internally, but output as ONE grouped ingredient line.
    - Round each ingredient carb value to the nearest 1 g.
-   - Use conservative but realistic estimates based on common serving sizes; do not guess extreme values unless clearly justified by size.
+   - Use realistic, standard serving-size references.
 
 5) CALORIE ESTIMATION
    - Estimate calories for the whole plate using typical macros (4 kcal/g carb, plus reasonable contributions from fat and protein).
    - Output Total Cals as a single integer "kcal" value.
 
-6) GI ESTIMATION
-   - Compute ONE GI value (1–100) for the ENTIRE meal.
-   - Base this on carb type (simple vs complex), level of processing, fiber content, and presence of fat/protein that slow absorption.
-   - Never modify carb grams based on GI.
-
-PACKAGED / LABELED ITEMS
-- If a wrapped or clearly branded product appears, treat the whole visible portion as one unit (or several identical units if multiple are present).
-- If multiple identical packaged items exist, GROUP them into one ingredient line and multiply internally.
-- If nutrition label information is visible or clearly implied in user notes, prefer that over generic estimates.
-
-FALLBACKS
-- For partially hidden foods, infer missing quantities by extending visible patterns (e.g., a row of nuggets or slices).
-- If item size is ambiguous, choose the closest standard serving size instead of inventing a new one.
-- Include beverages only if they clearly contain carbohydrates (soda, juice, milk, smoothies, sweetened coffee/tea); usually ignore plain water, black coffee, or unsweetened tea.
-
-FINAL VALIDATION (silent)
-- Verify there are NO duplicate ingredient lines for identical items.
-- Verify all carbs are non-negative integers.
-- Verify Total equals the sum of all ingredient carb values.
-- Verify Total Cals is an integer and plausibly consistent with the total carbs and meal composition.
-- Verify Total GI is a single integer between 1 and 100.
-- Verify formatting matches the specified template exactly.
-- Output ONLY the formatted result with no explanations or extra text.
+6) FINAL VALIDATION (silent)
+   - Verify there are NO duplicate ingredient lines.
+   - Verify all carbs are non-negative integers.
+   - Verify Total equals the sum of ingredient lines.
+   - Verify Total Cals is a plausible integer.
+   - Verify GI is a single integer between 1 and 100, following the GI rules above.
+   - Output ONLY the formatted result with no explanations.
 `;
+
 
 
 
