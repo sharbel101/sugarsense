@@ -80,6 +80,26 @@ export const PredictionPage: React.FC = () => {
   const minPred = pred ? Math.min(...pred) : 0;
   const maxPred = pred ? Math.max(...pred) : 0;
 
+  // Calculate analytics when prediction exists
+  const analytics = pred ? {
+    startingBG: Number(currentBG) || 0,
+    peakBG: maxPred,
+    finalBG: pred[pred.length - 1],
+    peakTime: pred.indexOf(maxPred) * 5,
+    carbs: Number(carbs) || 0,
+    requiredDose: Number(bolus) || 0,
+    givenDose: Number(bolus) || 0,
+    mismatch: 0,
+    derivedISF: (Number(cir) || 0) * 3.6,
+    totalCarbEffect: (Number(carbs) || 0) * 3.6 * (0.8 + 0.6 * ((Number(gi) || 0) / 100)),
+    totalInsulinEffect: (Number(bolus) || 0) * ((Number(cir) || 0) * 3.6),
+    netEffect: 0
+  } : null;
+
+  if (analytics) {
+    analytics.netEffect = Math.round(analytics.totalCarbEffect - analytics.totalInsulinEffect);
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-emerald-50 to-white">
       <Header onBack={() => navigate('/chat')} />
@@ -200,6 +220,94 @@ export const PredictionPage: React.FC = () => {
           {error && (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-6 mb-8">
               <p className="text-red-600 font-medium">{error}</p>
+            </div>
+          )}
+
+          {/* Analytics Section */}
+          {pred && analytics && (
+            <div className="rounded-3xl border border-emerald-100 bg-white/90 p-6 md:p-8 shadow-lg backdrop-blur-sm mb-8">
+              <h2 className="text-xl font-bold text-emerald-900 mb-6">📊 Simulation Metrics</h2>
+              
+              <div className="space-y-6">
+                {/* Key BG Metrics */}
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-800 mb-3 uppercase tracking-wide">Blood Glucose</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                      <p className="text-xs text-emerald-600 font-semibold">Starting BG:</p>
+                      <p className="text-lg font-bold text-emerald-900">{analytics.startingBG} mg/dL</p>
+                    </div>
+                    <div className="bg-teal-50 p-3 rounded-xl border border-teal-100">
+                      <p className="text-xs text-teal-600 font-semibold">Peak BG:</p>
+                      <p className="text-lg font-bold text-teal-900">{Math.round(analytics.peakBG)} mg/dL <span className="text-xs text-teal-600">@ {analytics.peakTime} min</span></p>
+                    </div>
+                    <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                      <p className="text-xs text-blue-600 font-semibold">Final BG (3h):</p>
+                      <p className="text-lg font-bold text-blue-900">{Math.round(analytics.finalBG)} mg/dL</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ICR/ISF Section */}
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-800 mb-3 uppercase tracking-wide">ICR/ISF</h3>
+                  <div className="bg-amber-50 p-3 rounded-xl border border-amber-100">
+                    <p className="text-xs text-amber-700 font-semibold mb-1">Derived ISF:</p>
+                    <p className="text-base font-bold text-amber-900">{analytics.derivedISF.toFixed(1)} mg/dL per unit</p>
+                  </div>
+                </div>
+
+                {/* Dose Information */}
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-800 mb-3 uppercase tracking-wide">Insulin Dosing</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
+                      <p className="text-xs text-purple-600 font-semibold">Carbs:</p>
+                      <p className="text-lg font-bold text-purple-900">{analytics.carbs} g</p>
+                    </div>
+                    <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                      <p className="text-xs text-indigo-600 font-semibold">Given Dose:</p>
+                      <p className="text-lg font-bold text-indigo-900">{analytics.givenDose.toFixed(1)} U</p>
+                    </div>
+                    <div className="bg-pink-50 p-3 rounded-xl border border-pink-100">
+                      <p className="text-xs text-pink-600 font-semibold">Mismatch:</p>
+                      <p className="text-lg font-bold text-pink-900">{analytics.mismatch.toFixed(1)} U</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Physiological Effects */}
+                <div>
+                  <h3 className="text-sm font-bold text-emerald-800 mb-3 uppercase tracking-wide">⚡ Physiological Effects</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-green-50 p-3 rounded-xl border border-green-100">
+                      <p className="text-xs text-green-600 font-semibold">Total Carb Effect:</p>
+                      <p className="text-lg font-bold text-green-900">+{Math.round(analytics.totalCarbEffect)} mg/dL</p>
+                    </div>
+                    <div className="bg-red-50 p-3 rounded-xl border border-red-100">
+                      <p className="text-xs text-red-600 font-semibold">Total Insulin Effect:</p>
+                      <p className="text-lg font-bold text-red-900">-{Math.round(analytics.totalInsulinEffect)} mg/dL</p>
+                    </div>
+                    <div className={`p-3 rounded-xl border ${analytics.netEffect >= 0 ? 'bg-orange-50 border-orange-100' : 'bg-cyan-50 border-cyan-100'}`}>
+                      <p className={`text-xs font-semibold ${analytics.netEffect >= 0 ? 'text-orange-600' : 'text-cyan-600'}`}>Net Effect:</p>
+                      <p className={`text-lg font-bold ${analytics.netEffect >= 0 ? 'text-orange-900' : 'text-cyan-900'}`}>
+                        {analytics.netEffect >= 0 ? '+' : ''}{analytics.netEffect} mg/dL
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warning if peak is high */}
+                {analytics.peakBG > 220 && (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
+                    <p className="text-sm font-bold text-red-800 flex items-center gap-2">
+                      <span className="text-lg">⚠️</span>
+                      HIGH PEAK: {Math.round(analytics.peakBG)} mg/dL
+                    </p>
+                    <p className="text-xs text-red-700 mt-1">Consider pre-bolusing 15-20 min before meal</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
