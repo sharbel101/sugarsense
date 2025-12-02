@@ -381,9 +381,11 @@ function SimpleLineChart({ data, maxPred, startTime }: { data: number[]; totalTi
 
   // Calculate coordinates
   const xs = data.map((_, i) => padding.left + (i / Math.max(1, data.length - 1)) * chartWidth);
-  // Fixed Y-axis range
-  const yMin = 50;
-  const yMax = 225;
+  // Dynamic Y-axis range based on data
+  const dataMin = Math.min(...data);
+  const dataMax = Math.max(...data);
+  const yMin = Math.max(40, Math.floor(dataMin / 10) * 10 - 10); // At least 40, rounded down with 10 buffer
+  const yMax = Math.max(225, Math.ceil(dataMax / 10) * 10 + 10); // At least 225, rounded up with 10 buffer
   const range = yMax - yMin;
   const ys = data.map(v => padding.top + (1 - (v - yMin) / range) * chartHeight);
 
@@ -414,39 +416,58 @@ function SimpleLineChart({ data, maxPred, startTime }: { data: number[]; totalTi
       <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="chart-svg" style={{ minWidth: '100%' }}>
         {/* Background zones */}
         {(() => {
-          const hypoY = padding.top + (1 - (70 - yMin) / range) * chartHeight;
-          const hyperY = padding.top + (1 - (180 - yMin) / range) * chartHeight;
-          return (
-            <>
-              {/* Hypoglycemia zone (below 70) - red */}
+          const zones = [];
+          
+          // Only show zones if thresholds are within visible range
+          if (70 >= yMin && 70 <= yMax) {
+            const hypoY = padding.top + (1 - (70 - yMin) / range) * chartHeight;
+            // Hypoglycemia zone (below 70) - red
+            zones.push(
               <rect
+                key="hypo-zone"
                 x={padding.left}
                 y={hypoY}
                 width={chartWidth}
-                height={height - padding.bottom - hypoY}
+                height={Math.max(0, height - padding.bottom - hypoY)}
                 fill="#fca5a5"
                 opacity="0.3"
               />
-              {/* Hyperglycemia zone (above 180) - yellow/orange */}
+            );
+          }
+          
+          if (180 >= yMin && 180 <= yMax) {
+            const hyperY = padding.top + (1 - (180 - yMin) / range) * chartHeight;
+            // Hyperglycemia zone (above 180) - yellow/orange
+            zones.push(
               <rect
+                key="hyper-zone"
                 x={padding.left}
                 y={padding.top}
                 width={chartWidth}
-                height={hyperY - padding.top}
+                height={Math.max(0, hyperY - padding.top)}
                 fill="#fde68a"
                 opacity="0.3"
               />
-              {/* Normal range (70-180) - green tint */}
-              <rect
-                x={padding.left}
-                y={hyperY}
-                width={chartWidth}
-                height={hypoY - hyperY}
-                fill="#bbf7d0"
-                opacity="0.2"
-              />
-            </>
-          );
+            );
+            
+            // Normal range (70-180) - green tint (only if both thresholds visible)
+            if (70 >= yMin && 70 <= yMax) {
+              const hypoY = padding.top + (1 - (70 - yMin) / range) * chartHeight;
+              zones.push(
+                <rect
+                  key="normal-zone"
+                  x={padding.left}
+                  y={hyperY}
+                  width={chartWidth}
+                  height={Math.max(0, hypoY - hyperY)}
+                  fill="#bbf7d0"
+                  opacity="0.2"
+                />
+              );
+            }
+          }
+          
+          return <>{zones}</>;
         })()}
         
         {/* Grid background */}
@@ -587,14 +608,24 @@ function SimpleLineChart({ data, maxPred, startTime }: { data: number[]; totalTi
 
         {/* Threshold lines */}
         {(() => {
-          const hypoY = padding.top + (1 - (70 - yMin) / range) * chartHeight;
-          const hyperY = padding.top + (1 - (180 - yMin) / range) * chartHeight;
-          return (
-            <>
-              <line x1={padding.left} x2={width - padding.right} y1={hypoY} y2={hypoY} stroke="#dc2626" strokeWidth="1.5" strokeDasharray="5,5" />
-              <line x1={padding.left} x2={width - padding.right} y1={hyperY} y2={hyperY} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="5,5" />
-            </>
-          );
+          const lines = [];
+          
+          // Only show threshold line if value is within visible range
+          if (70 >= yMin && 70 <= yMax) {
+            const hypoY = padding.top + (1 - (70 - yMin) / range) * chartHeight;
+            lines.push(
+              <line key="hypo-line" x1={padding.left} x2={width - padding.right} y1={hypoY} y2={hypoY} stroke="#dc2626" strokeWidth="1.5" strokeDasharray="5,5" />
+            );
+          }
+          
+          if (180 >= yMin && 180 <= yMax) {
+            const hyperY = padding.top + (1 - (180 - yMin) / range) * chartHeight;
+            lines.push(
+              <line key="hyper-line" x1={padding.left} x2={width - padding.right} y1={hyperY} y2={hyperY} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="5,5" />
+            );
+          }
+          
+          return <>{lines}</>;
         })()}
 
         {/* Legend box */}
