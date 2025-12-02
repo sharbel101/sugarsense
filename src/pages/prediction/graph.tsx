@@ -20,6 +20,7 @@ export const PredictionPage: React.FC = () => {
   const [pred, setPred] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentMeals, setRecentMeals] = useState<Meal[]>([]);
+  const [startTime, setStartTime] = useState<Date>(new Date());
 
   // Fetch recent meals on mount
   useEffect(() => {
@@ -75,6 +76,7 @@ export const PredictionPage: React.FC = () => {
         }, 0) / res.length
       });
       setPred(res);
+      setStartTime(new Date()); // Set prediction start time to now
     } catch (e: any) {
       setError(e?.message || 'Failed to generate prediction');
       setPred(null);
@@ -322,7 +324,7 @@ export const PredictionPage: React.FC = () => {
           {pred && (
             <div className="rounded-3xl border border-emerald-100 bg-white/90 p-6 md:p-8 shadow-lg backdrop-blur-sm mb-8">
               <h2 className="text-xl font-bold text-emerald-900 mb-6">Predicted Glucose Trend</h2>
-              <SimpleLineChart data={pred} totalTime={totalTime} minPred={minPred} maxPred={maxPred} />
+              <SimpleLineChart data={pred} totalTime={totalTime} minPred={minPred} maxPred={maxPred} startTime={startTime} />
 
               {/* Stats Grid */}
               <div className="grid grid-cols-3 gap-4 mt-8">
@@ -363,12 +365,14 @@ export const PredictionPage: React.FC = () => {
 };
 
 
-function SimpleLineChart({ data, maxPred }: { data: number[]; totalTime?: number; minPred: number; maxPred: number }) {
+function SimpleLineChart({ data, maxPred, startTime }: { data: number[]; totalTime?: number; minPred: number; maxPred: number; startTime?: Date }) {
   const [hoveredPoint, setHoveredPoint] = React.useState<number | null>(null);
   const [tooltipPos, setTooltipPos] = React.useState<{x: number, y: number} | null>(null);
   
+  const baseTime = startTime || new Date();
+  
   // Mobile-optimized: compact spacing for less scrolling
-  const pointSpacing = 35; // pixels between each data point (reduced from 60)
+  const pointSpacing = 12; // pixels between each data point (more compact)
   const width = data.length * pointSpacing;
   const height = 400;
   const padding = { top: 40, bottom: 70, left: 60, right: 40 };
@@ -393,10 +397,17 @@ function SimpleLineChart({ data, maxPred }: { data: number[]; totalTime?: number
     return yMax - t * range; // reversed: start from max, go down to min
   });
 
-  // X-axis labels - show every 3rd point for mobile readability
+  // X-axis labels - show every 6th point for less clutter, format as clock time
   const xLabels = data
-    .map((_, i) => ({ idx: i, time: i * 5 }))
-    .filter((_, i) => i % 3 === 0);
+    .map((_, i) => {
+      const timeOffset = i * 5; // minutes
+      const pointTime = new Date(baseTime.getTime() + timeOffset * 60000);
+      const hours = pointTime.getHours();
+      const minutes = pointTime.getMinutes();
+      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      return { idx: i, time: timeOffset, timeStr };
+    })
+    .filter((_, i) => i % 6 === 0);
 
   return (
     <div className="simple-line-chart" style={{ overflowX: 'auto', overflowY: 'hidden', maxWidth: '100%' }}>
@@ -474,7 +485,7 @@ function SimpleLineChart({ data, maxPred }: { data: number[]; totalTime?: number
             key={`dot-${i}`} 
             cx={x} 
             cy={ys[i]} 
-            r={hoveredPoint === i ? 6 : 4} 
+            r={hoveredPoint === i ? 7 : 5} 
             fill="#3b82f6" 
             stroke="white" 
             strokeWidth="2"
@@ -543,7 +554,12 @@ function SimpleLineChart({ data, maxPred }: { data: number[]; totalTime?: number
               fontSize="11"
               fill="#6b7280"
             >
-              Time: {hoveredPoint * 5} min
+              {(() => {
+                const pointTime = new Date(baseTime.getTime() + hoveredPoint * 5 * 60000);
+                const hours = pointTime.getHours();
+                const minutes = pointTime.getMinutes();
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+              })()}
             </text>
           </g>
         )}
@@ -608,7 +624,7 @@ function SimpleLineChart({ data, maxPred }: { data: number[]; totalTime?: number
               fontWeight="600"
               className="chart-label"
             >
-              {label.time}m
+              {label.timeStr}
             </text>
           );
         })}
