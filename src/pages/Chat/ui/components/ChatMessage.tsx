@@ -137,84 +137,56 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       console.log(`Saving meal: ${mealName}`);
       console.log(`Exact values from FoodData - Carbs: ${totalCarbs}g, Insulin: ${totalInsulin} units, GI: ${glycemicIndex ?? 'N/A'}`);
       
-      // If there's an image attached to the message, upload it first
-      let imageUrl: string | undefined = undefined;
+      // If there's an image attached to the message, compress and include it
+      let imageData: string | undefined = undefined;
       try {
-        console.log('Message imageFile value:', imageFile);
-        console.log('Message image value:', image);
-        
-        // Prefer imageFile if available (File object), otherwise try image (URL)
         if (imageFile) {
-          console.log('Using imageFile from message...');
-          // limit upload time to 20s
-          imageUrl = await withTimeout(uploadImageToStorage(imageFile), 20000, 'Image upload timed out');
-          console.log('Image uploaded, public URL:', imageUrl);
+          console.log('Compressing and preparing image for database...');
+          // Fast compression with 8s timeout for mobile
+          imageData = await withTimeout(uploadImageToStorage(imageFile), 8000, 'Image compression timed out');
+          console.log('Image compressed and ready for storage');
         } else if (image) {
           const isRemote = /^https?:\/\//i.test(image);
-          console.log('isRemote image?', isRemote);
           if (!isRemote) {
-            // Convert data/blob URL to File by fetching it
-            console.log('Fetching image blob for upload...');
+            console.log('Compressing local image...');
             const resp = await fetch(image);
-            if (!resp.ok) throw new Error(`Failed to fetch image for upload: ${resp.status}`);
+            if (!resp.ok) throw new Error(`Failed to fetch image: ${resp.status}`);
             const blob = await resp.blob();
             const filename = `meal_${Date.now()}.${(blob.type || 'image/png').split('/').pop()}`;
             const file = new File([blob], filename, { type: blob.type || 'image/png' });
-            console.log('Uploading attached image for meal...');
-            imageUrl = await withTimeout(uploadImageToStorage(file), 20000, 'Image upload timed out');
-            console.log('Image uploaded, public URL:', imageUrl);
+            imageData = await withTimeout(uploadImageToStorage(file), 8000, 'Image compression timed out');
+            console.log('Image compressed and ready for storage');
           } else {
-            // Assume already public
-            console.log('Image is remote URL; skipping upload. Using as-is.');
-            imageUrl = image;
+            console.log('Skipping remote URL');
+            imageData = undefined;
           }
-        } else {
-          console.log('No image attached to message; skipping upload.');
         }
       } catch (imgErr) {
-        console.warn('Image upload failed, proceeding without image:', imgErr);
+        console.warn('Image compression skipped, saving meal without image:', imgErr);
       }
 
-      // Save as a single meal row (include imageUrl when available)
-        try {
-          await withTimeout(
-            saveMeal(
-              effectiveUserId,
-              mealName,
-              totalCarbs,
-              totalInsulin,
-              glycemicIndex, // Use parsed GI from FoodData
-              undefined, // currentGlucose
-              imageUrl ?? null
-            ),
-            15000,
-            'Saving meal timed out'
-          );
-          console.log('✓ Meal approved and saved to database');
-          alert('Meal saved successfully!');
-        } catch (saveErr: any) {
-          console.error('Failed to save meal (with timeout):', saveErr);
-          // Attempt a retry without image if the first save failed and an image was present
-          if (imageUrl) {
-            try {
-              console.log('Retrying save without image...');
-              await withTimeout(
-                saveMeal(effectiveUserId, mealName, totalCarbs, totalInsulin),
-                10000,
-                'Retry saving meal timed out'
-              );
-              console.log('✓ Meal saved on retry without image');
-              alert('Meal saved (without image) after retry');
-            } catch (retryErr: any) {
-              console.error('Retry also failed:', retryErr);
-              alert(`Failed to save meal: ${retryErr?.message || retryErr}`);
-              throw retryErr;
-            }
-          } else {
-            alert(`Failed to save meal: ${saveErr?.message || saveErr}`);
-            throw saveErr;
-          }
-        }
+      // Fast meal save - minimal operation
+      try {
+        await withTimeout(
+          saveMeal(
+            effectiveUserId,
+            mealName,
+            totalCarbs,
+            totalInsulin,
+            glycemicIndex,
+            undefined,
+            imageData ?? null
+          ),
+          8000,
+          'Meal save timed out'
+        );
+        console.log('✓ Meal saved successfully');
+        alert('Meal saved successfully!');
+      } catch (saveErr: any) {
+        console.error('Failed to save meal:', saveErr);
+        alert(`Failed to save meal: ${saveErr?.message || saveErr}`);
+        throw saveErr;
+      }
     } catch (error: any) {
       console.error('✗ Error saving meal:', error);
       alert(`Failed to save meal: ${error?.message ?? 'Unknown error'}`);

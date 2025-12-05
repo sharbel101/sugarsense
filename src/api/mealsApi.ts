@@ -19,17 +19,17 @@ export interface Meal {
   current_glucose?: number;
   meal_timestamp?: string;
   image_url?: string;
+  image_data?: string; // Base64 compressed image stored in DB
   created_at?: string;
 }
 
 /**
  * Get or create today's daily log for the user
+ * Single upsert operation - minimal DB roundtrips
  */
 export const getOrCreateDailyLog = async (userId: string): Promise<DailyLog> => {
-  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = new Date().toISOString().split('T')[0];
 
-  // Upsert avoids a separate select + insert roundtrip
-  // Requires a unique constraint on (user_id, log_date) in daily_logs
   const { data, error } = await supabase
     .from('daily_logs')
     .upsert(
@@ -46,7 +46,8 @@ export const getOrCreateDailyLog = async (userId: string): Promise<DailyLog> => 
 };
 
 /**
- * Save a meal and update the daily log totals
+ * Save a meal with optional compressed image - optimized for mobile
+ * Minimal database operations, fast execution
  */
 export const saveMeal = async (
   userId: string,
@@ -55,12 +56,12 @@ export const saveMeal = async (
   insulinTaken: number = 0,
   glycemicIndex?: number,
   currentGlucose?: number,
-  imageUrl?: string | null
+  imageData?: string | null
 ): Promise<Meal> => {
   // Get or create today's daily log
   const dailyLog = await getOrCreateDailyLog(userId);
 
-  // Insert the meal (include optional image_url)
+  // Insert the meal with optional compressed image data
   const { data: meal, error: mealError } = await supabase
     .from('meals')
     .insert([
@@ -71,14 +72,15 @@ export const saveMeal = async (
         insulin_taken: insulinTaken,
         glycemic_index: glycemicIndex ?? null,
         current_glucose: currentGlucose ?? null,
-        image_url: imageUrl ?? null,
+        image_data: imageData ?? null, // Store compressed base64 in DB
       },
     ])
     .select()
     .maybeSingle();
 
   if (mealError) throw mealError;
-  // Update daily log totals
+
+  // Update daily log totals in single operation
   const newTotalCarbs = (dailyLog.total_carbs || 0) + carbsGrams;
   const newTotalInsulin = (dailyLog.total_insulin || 0) + insulinTaken;
 
@@ -96,10 +98,10 @@ export const saveMeal = async (
 };
 
 /**
- * Fetch all meals for a user on a specific date with full details
+ * Fetch all meals for a user on a specific date
+ * Single query with join
  */
 export const fetchMealsForDateWithDetails = async (userId: string, date: string): Promise<Meal[]> => {
-  // Single roundtrip using an inner join to filter meals by the user's daily log
   const { data, error } = await supabase
     .from('meals')
     .select('*, daily_logs!inner(id, user_id, log_date)')
@@ -108,7 +110,7 @@ export const fetchMealsForDateWithDetails = async (userId: string, date: string)
     .order('meal_timestamp', { ascending: true });
 
   if (error) throw error;
-  // Strip the joined daily_logs object if present
+
   const meals = (data || []).map((m: any) => {
     const { daily_logs, ...rest } = m;
     return rest as Meal;

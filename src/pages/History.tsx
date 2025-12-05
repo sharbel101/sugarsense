@@ -123,9 +123,9 @@ export const HistoryPage: React.FC = () => {
                     <h2 className="text-2xl font-bold text-emerald-900">
                       {meal.food_name}
                     </h2>
-                    {meal.image_url && (
+                    {(meal.image_data || meal.image_url) && (
                       <img
-                        src={meal.image_url}
+                        src={meal.image_data || meal.image_url}
                         alt={meal.food_name}
                         className="h-24 w-24 rounded-xl object-cover shadow-md"
                       />

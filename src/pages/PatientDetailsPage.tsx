@@ -21,6 +21,7 @@ interface Meal {
   current_glucose?: number;
   meal_timestamp?: string;
   image_url?: string;
+  image_data?: string; // Base64 compressed image
 }
 
 interface Patient {
@@ -367,9 +368,9 @@ const MealCard = ({ meal }: { meal: Meal }) => (
       </div>
 
       {/* Image */}
-      {meal.image_url && (
+      {(meal.image_data || meal.image_url) && (
         <img
-          src={meal.image_url}
+          src={meal.image_data || meal.image_url}
           alt={meal.food_name}
           className="h-24 w-24 rounded-lg object-cover shadow-md"
         />

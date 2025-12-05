@@ -1,37 +1,28 @@
-import { supabase } from './supabaseClient';
-
-// Change this to the bucket name you have in your Supabase project
-const BUCKET_NAME = 'meal-images';
+import { compressImageToBase64, getBase64Size, formatBytes } from './imageCompression';
 
 /**
- * Uploads an image File to Supabase Storage and returns a public URL.
- * If the bucket does not exist or upload fails, this will throw.
+ * Uploads a compressed image to the database as base64 string
+ * Fast and lightweight - no external storage roundtrip
+ * Returns the base64 string directly for database storage
  */
 export const uploadImageToStorage = async (file: File): Promise<string> => {
-  const timestamp = Date.now();
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `uploads/${timestamp}_${safeName}`;
+  try {
+    console.log(`[storageApi] Compressing image: ${file.name}`);
+    
+    // Aggressive compression for mobile: 400x400 max, 60% quality
+    const base64 = await compressImageToBase64(file, {
+      maxWidth: 400,
+      maxHeight: 400,
+      quality: 0.6,
+    });
 
-  const { data, error: uploadError } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(path, file, { cacheControl: '3600', upsert: false });
+    const sizeBytes = getBase64Size(base64);
+    console.log(`[storageApi] Compressed image size: ${formatBytes(sizeBytes)}`);
 
-  if (uploadError) {
-    console.error('[storageApi] upload error', uploadError);
-    throw uploadError;
+    // Return base64 string directly - will be stored in DB
+    return base64;
+  } catch (error) {
+    console.error('[storageApi] Compression error', error);
+    throw new Error(`Image compression failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-
-  // Normalize getPublicUrl() return shapes between SDK versions
-  const publicResp = supabase.storage.from(BUCKET_NAME).getPublicUrl((data as any).path);
-  // v1: { data: { publicUrl } }, v2: { publicURL }
-  // Try known places and fall back to constructing a URL if possible
-  // @ts-ignore
-  const publicUrl = (publicResp as any)?.data?.publicUrl || (publicResp as any)?.publicURL || null;
-
-  if (!publicUrl) {
-    console.warn('[storageApi] getPublicUrl returned unexpected shape:', publicResp);
-    throw new Error('Could not obtain public URL after upload');
-  }
-
-  return publicUrl;
 };
