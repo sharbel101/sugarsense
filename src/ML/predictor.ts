@@ -7,6 +7,7 @@ export interface PredictionInput {
   cir: number; // ICR (carb:insulin ratio)
   gi?: number;
 }
+
 type MathWeights = {
   HORIZONS: number[];
   DT: number;
@@ -59,50 +60,57 @@ export function simulateBG(
   const carbFrac = weights.carb_kernel;
   const insulinFrac = weights.insulin_kernel;
 
-  // Validate kernel lengths match HORIZONS
-  if (carbFrac.length !== weights.HORIZONS.length || insulinFrac.length !== weights.HORIZONS.length) {
-    console.error(`Kernel length mismatch: HORIZONS=${weights.HORIZONS.length}, carb_kernel=${carbFrac.length}, insulin_kernel=${insulinFrac.length}`);
+  if (
+    carbFrac.length !== weights.HORIZONS.length ||
+    insulinFrac.length !== weights.HORIZONS.length
+  ) {
+    console.error(
+      `Kernel length mismatch: HORIZONS=${weights.HORIZONS.length}, carb_kernel=${carbFrac.length}, insulin_kernel=${insulinFrac.length}`
+    );
   }
 
   const horizons = weights.HORIZONS;
   const bgSeries: number[] = new Array(horizons.length);
 
   for (let t = 0; t < horizons.length; t++) {
-    // Use kernel values directly from JSON to preserve noise
     const cf = carbFrac[t] ?? carbFrac[carbFrac.length - 1];
     const inf = insulinFrac[t] ?? insulinFrac[insulinFrac.length - 1];
-    
+
     let bg = currentBG + cf * totalCarbEffect - inf * totalInsulinEffect;
+
     bg = Math.max(weights.CLIPPING.MIN_BG, Math.min(weights.CLIPPING.MAX_BG, bg));
     bgSeries[t] = bg;
-    
-    // Log first few iterations to verify noise
+
     if (t < 5) {
-      console.log(`⚡ t=${t}: cf=${cf.toFixed(6)}, inf=${inf.toFixed(6)}, bg=${bg.toFixed(2)}`);
+      console.log(
+        `⚡ t=${t}: cf=${cf.toFixed(6)}, inf=${inf.toFixed(6)}, bg=${bg.toFixed(2)}`
+      );
     }
   }
 
   // ============================================================
-  // FINAL GUARANTEED NOISE INJECTION (cannot be removed by frontend)
+  // FINAL NOISE INJECTION (LIGHT VERSION)
   // ============================================================
-  // Strong deterministic multi-frequency noise for visibility
+  // Previously: 5.0 + 3.0 + 2.0 amplitude = VERY STRONG
+  // Now: 0.5 + 0.3 + 0.2 = VERY LIGHT + SMOOTH
   for (let t = 0; t < bgSeries.length; t++) {
-    const n1 = 5.0 * Math.sin(t / 2.5);
-    const n2 = 3.0 * Math.cos(t / 7.0);
-    const n3 = 2.0 * Math.sin(t / 1.5);
-    
+    const n1 = 0.5 * Math.sin(t / 4.0);   // smoother + weaker
+    const n2 = 0.3 * Math.cos(t / 10.0);  // longer period
+    const n3 = 0.2 * Math.sin(t / 3.0);   // tiny micro-wave
+
     const noise = n1 + n2 + n3;
-    
-    // Inject noise
+
     let noisyBG = bgSeries[t] + noise;
-    
-    // Keep within valid BG limits
-    noisyBG = Math.max(weights.CLIPPING.MIN_BG, Math.min(weights.CLIPPING.MAX_BG, noisyBG));
-    
+
+    noisyBG = Math.max(
+      weights.CLIPPING.MIN_BG,
+      Math.min(weights.CLIPPING.MAX_BG, noisyBG)
+    );
+
     bgSeries[t] = noisyBG;
   }
-  
-  console.log("🔥 NOISE INJECTED - First 10 values:", bgSeries.slice(0, 10));
+
+  console.log("🔥 LIGHT NOISE APPLIED - First 10 values:", bgSeries.slice(0, 10));
 
   return bgSeries;
 }
@@ -114,11 +122,10 @@ export function predictDelta(
   gi: number = 55
 ): number[] {
   const bg = simulateBG(0, carbs, gi, bolus, cir, M);
-  return bg; // relative to 0, so this is delta
+  return bg; // delta relative to 0
 }
 
 export function predictAbsolute(input: PredictionInput): number[] {
-  // Preserve signature and output shape
   return simulateBG(
     input.currentBG,
     input.carbs,
