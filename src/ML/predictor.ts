@@ -89,19 +89,67 @@ export function simulateBG(
   }
 
   // ============================================================
-  // FINAL NOISE INJECTION (LIGHT VERSION)
+  // REAL CGM NOISE (Simplified to the Real Statistical Behavior)
   // ============================================================
-  // Previously: 5.0 + 3.0 + 2.0 amplitude = VERY STRONG
-  // Now: 0.5 + 0.3 + 0.2 = VERY LIGHT + SMOOTH
+  // Based on actual CGM noise measured vs fingersticks/YSI:
+  // 1) Baseline random noise (Gaussian-Laplacian mixture)
+  // 2) Tail spikes (rare big jumps)
+  // 3) Short-noise waves (wobble during steady state)
+
+  // Helper: Standard normal distribution (Box-Muller)
+  const gaussianRandom = (): number => {
+    const u1 = Math.random();
+    const u2 = Math.random();
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+  };
+
+  // Helper: Laplace distribution
+  const laplaceRandom = (b: number = 1): number => {
+    const u = Math.random() - 0.5;
+    return -b * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
+  };
+
+  // Pre-compute wobble parameters for this series (constant per prediction)
+  const wobbleAmplitude = 0.5 + Math.random() * 1.5; // Uniform(0.5, 2)
+  const wobblePeriod = 4 + Math.random() * 6;        // Uniform(4, 10) in units of steps
+
   for (let t = 0; t < bgSeries.length; t++) {
-    const n1 = 0.5 * Math.sin(t / 4.0);   // smoother + weaker
-    const n2 = 0.3 * Math.cos(t / 10.0);  // longer period
-    const n3 = 0.2 * Math.sin(t / 3.0);   // tiny micro-wave
+    // ============================================================
+    // 1️⃣ BASELINE RANDOM NOISE (Gaussian-Laplacian mixture)
+    // ============================================================
+    // Most readings within ±3-4 mg/dL (slightly smoother)
+    const baselineNoise = 3 * gaussianRandom() + 1.2 * laplaceRandom(1);
 
-    const noise = n1 + n2 + n3;
+    // ============================================================
+    // 2️⃣ TAIL SPIKES (Real CGM "jump" noise)
+    // ============================================================
+    // 88% no spike, 10% ~±7 mg/dL, 2% ~±15 mg/dL (less frequent & smaller)
+    let spikeNoise = 0;
+    const spikeRand = Math.random();
+    if (spikeRand > 0.88) {
+      if (spikeRand > 0.98) {
+        // 2% probability: big spike
+        spikeNoise = 15 * gaussianRandom();
+      } else {
+        // 10% probability: medium spike
+        spikeNoise = 7 * gaussianRandom();
+      }
+    }
 
-    let noisyBG = bgSeries[t] + noise;
+    // ============================================================
+    // 3️⃣ SHORT-NOISE WAVES (CGM wobble)
+    // ============================================================
+    // Sine wave with random amplitude and period
+    const wobbleNoise = wobbleAmplitude * Math.sin((2 * Math.PI * t) / wobblePeriod);
 
+    // ============================================================
+    // COMBINE ALL NOISE COMPONENTS
+    // ============================================================
+    const totalNoise = baselineNoise + spikeNoise + wobbleNoise;
+
+    let noisyBG = bgSeries[t] + totalNoise;
+
+    // Clip to valid BG range
     noisyBG = Math.max(
       weights.CLIPPING.MIN_BG,
       Math.min(weights.CLIPPING.MAX_BG, noisyBG)
