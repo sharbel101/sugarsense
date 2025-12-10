@@ -1,5 +1,5 @@
 const GEMINI_API_KEY = "AIzaSyBBoTkEDmshutEmysBcKzH3mX3WIFqRszs";
-const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
 
 // Function to convert file to base64
 const fileToGenerativePart = async (file: File) => {
