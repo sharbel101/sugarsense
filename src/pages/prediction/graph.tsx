@@ -628,19 +628,6 @@ function SimpleLineChart({ data, maxPred, startTime }: { data: number[]; totalTi
           return <>{lines}</>;
         })()}
 
-        {/* Legend box */}
-        <g transform={`translate(${width - padding.right - 220}, ${padding.top + 10})`}>
-          <rect x="0" y="0" width="210" height="85" fill="white" stroke="#d1d5db" strokeWidth="1" rx="4" opacity="0.95" />
-          <line x1="10" x2="30" y1="18" y2="18" stroke="#3b82f6" strokeWidth="3" />
-          <text x="35" y="22" fontSize="11" fill="#374151" fontWeight="500">Predicted Blood Glucose</text>
-          <line x1="10" x2="30" y1="38" y2="38" stroke="#dc2626" strokeWidth="1.5" strokeDasharray="5,5" />
-          <text x="35" y="42" fontSize="11" fill="#374151">Hypoglycemia (70 mg/dL)</text>
-          <line x1="10" x2="30" y1="58" y2="58" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="5,5" />
-          <text x="35" y="62" fontSize="11" fill="#374151">Hyperglycemia (180 mg/dL)</text>
-          <path d="M 15 73 L 18 66 L 21 73 L 27 73 L 22 77 L 24 84 L 18 80 L 12 84 L 14 77 L 9 73 Z" fill="#dc2626" />
-          <text x="35" y="82" fontSize="11" fill="#374151">Starting BG ({data[0].toFixed(0)})</text>
-        </g>
-
         {/* X-axis labels */}
         {xLabels.map((label, i) => {
           const x = xs[label.idx];
