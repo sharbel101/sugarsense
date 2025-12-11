@@ -1,4 +1,4 @@
-const GEMINI_API_KEY = "AIzaSyBBoTkEDmshutEmysBcKzH3mX3WIFqRszs";
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
 
 // Function to convert file to base64
