@@ -1,4 +1,9 @@
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY as string | undefined;
+if (!GEMINI_API_KEY) {
+  throw new Error(
+    'Missing VITE_GEMINI_API_KEY. Add it to your .env.local (Vite) file.'
+  );
+}
 const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
 
 // Function to convert file to base64
